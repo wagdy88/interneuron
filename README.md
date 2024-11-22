@@ -1,0 +1,2 @@
+# interneuron
+Thalamic interneuron 

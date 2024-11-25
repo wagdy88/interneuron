@@ -165,12 +165,12 @@ v_vec.record(cell.soma(0.5)._ref_v)
 # LEAK CURRENT ##
 g_Pass = 2.5e-05 
 # SOMA
-cell.soma.insert('Pass')
+#cell.soma.insert('Pass')
 cell.soma.g_Pass = g_Pass 
 cell.soma.erev_Pass = -72 
 
 # PROXIMAL DENDRITES
-cell.dend.insert('Pass')
+#cell.dend.insert('Pass')
 cell.dend.g_Pass = g_Pass
 cell.dend.erev_Pass = -7
 
@@ -182,14 +182,14 @@ cell.dend.erev_Pass = -7
 # 	dist_dend.erev_Pass = -72
 
 ## Adding soma parameters from mechanisms in Erica's Github ##
-cell.soma.insert('Cad_int')
+#cell.soma.insert('Cad_int')
 cell.soma.Cainf_Cad_int = 1e-8
 cell.soma.k_Cad_int = 0.005
 cell.soma.taur_Cad_int = 150.0
 
 
 ##FAST SODIUM 
-cell.soma.insert('naf2')
+#cell.soma.insert('naf2')
 cell.soma.gmax_naf2     = 0.1 #0.042
 cell.soma.mvhalf_naf2   = -40
 cell.soma.mvalence_naf2 =  5
@@ -199,14 +199,14 @@ cell.soma.hvalence_naf2 = -6
 
 
 # POTASSIUM DELAYED RECTIFIER -- ORIGINAL
-cell.soma.insert('kdr2orig')
+#cell.soma.insert('kdr2orig')
 cell.soma.ek = -95
 cell.soma.gmax_kdr2orig     	= 0.1
 cell.soma.mvhalf_kdr2orig  	= -31
 cell.soma.mvalence_kdr2orig 	=  3.8
 
 # IH current
-cell.soma.insert('iar')
+#cell.soma.insert('iar')
 cell.soma.ghbar_iar =  0.7e-04   # 1.3e-4		# 0.13 mS/cm2; correct re: jun.pdf
 cell.soma.shift_iar = -0.0
 #h.erev_iar = -44 	# ALREADY THE DEFAULT VALUE IN .mod 
@@ -214,7 +214,7 @@ cell.soma.shift_iar = -0.0
 
 
 # ICAN current
-cell.soma.insert('icanINT')
+#cell.soma.insert('icanINT')
 cell.soma.gbar_icanINT = 0.0001 #0.0003
 h.beta_icanINT = 0.003							# correct re: jun.pdf
 h.cac_icanINT = 1.1e-04
@@ -224,7 +224,7 @@ h.x_icanINT = 8									# correct re: jun.pdf, if x_ican == "n"
 
 
 # IAHP current
-cell.soma.insert('iahp')
+#cell.soma.insert('iahp')
 cell.soma.gkbar_iahp = 0.45 #0.3
 h.beta_iahp = 0.02								# correct re: jun.pdf
 h.cac_iahp = 8e-04
@@ -233,7 +233,7 @@ cell.soma.ratC_iahp = 1 #0.8 							# high-thresh pool (IL)
 # soma.ek2_iahp = -95 # added from Erica's Github
 
 # IT current
-cell.soma.insert('it2INT')
+#cell.soma.insert('it2INT')
 cell.soma.gcabar_it2INT = 0.4e-04  #1.0e-4
 cell.soma.shift1_it2INT = 7
 h.shift2_it2INT = 0
@@ -244,7 +244,7 @@ h.sh_it2INT = 4.6
 
 
 # CALCIUM PUMP FOR "ca" ION POOL - associated with IT
-cell.soma.insert('cad_int')
+#cell.soma.insert('cad_int')
 cell.soma.taur_cad_int  = 150
 cell.soma.taur2_cad_int  = 80
 cell.soma.cainf_cad_int = 1e-8
@@ -257,14 +257,14 @@ h.kd2_cad_int = 9e-4
 
 
 # IL current 
-cell.soma.insert('icalINT')
+#cell.soma.insert('icalINT')
 cell.soma.pcabar_icalINT = 0.00009 #0.0006
 h.sh1_icalINT = -10
 h.sh2_icalINT = 0
 
 
 # CALCIUM PUMP FOR "Ca" ION POOL -- associated with IL 
-cell.soma.insert('Cad_int')
+#cell.soma.insert('Cad_int')
 cell.soma.taur_Cad_int  = 150
 cell.soma.taur2_Cad_int = 80
 cell.soma.Cainf_Cad_int  = 1e-8

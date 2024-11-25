@@ -1,4 +1,4 @@
-from sTI_cell import sTI_cell
+from sTI import sTI_cell
 from neuron import h, gui
 import matplotlib.pyplot as plt 
 from matplotlib import rc  # for font rendering (see below)

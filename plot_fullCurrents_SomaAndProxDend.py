@@ -42,123 +42,6 @@ class sTI_cell:
         soma.insert('naf2')
         soma.gmax_naf2 = 0.1
         # Continue with other parameters...
-		#############################################
-		############# INSERT MECHANISMS #############
-		#############################################
-
-		## LEAK CURRENT ##
-		soma.g_Pass = 2.5e-05 
-		# SOMA
-		soma.insert('Pass')
-		soma.g_Pass = g_Pass 
-		soma.erev_Pass = -72 
-
-
-		## Adding soma parameters from mechanisms in Erica's Github ##
-		soma.insert('Cad_int')
-		soma.Cainf_Cad_int = 1e-8
-		soma.k_Cad_int = 0.005
-		soma.taur_Cad_int = 150.0
-
-
-		##FAST SODIUM 
-		soma.insert('naf2')
-		soma.gmax_naf2     = 0.1 #0.042
-		soma.mvhalf_naf2   = -40
-		soma.mvalence_naf2 =  5
-		soma.hvhalf_naf2   = -43
-		soma.hvalence_naf2 = -6
-
-
-
-		# POTASSIUM DELAYED RECTIFIER -- ORIGINAL
-		soma.insert('kdr2orig')
-		soma.ek = -95
-		soma.gmax_kdr2orig     	= 0.1
-		soma.mvhalf_kdr2orig  	= -31
-		soma.mvalence_kdr2orig 	=  3.8
-
-		# IH current
-		soma.insert('iar')
-		soma.ghbar_iar =  0.7e-04   # 1.3e-4		# 0.13 mS/cm2; correct re: jun.pdf
-		soma.shift_iar = -0.0
-		#h.erev_iar = -44 	# ALREADY THE DEFAULT VALUE IN .mod 
-		#h.stp_iar = 7.4 	# ALREADY THE DEFAULT VALUE IN .mod 
-
-
-		# ICAN current
-		soma.insert('icanINT')
-		soma.gbar_icanINT = 0.0001 #0.0003
-		h.beta_icanINT = 0.003							# correct re: jun.pdf
-		h.cac_icanINT = 1.1e-04
-		soma.ratc_icanINT = 0.8 #1	 						# low-thresh pool (IT)
-		soma.ratC_icanINT = 0.1 #0.2							# high-thresh pool (IL)
-		h.x_icanINT = 8									# correct re: jun.pdf, if x_ican == "n"
-
-
-		# IAHP current
-		soma.insert('iahp')
-		soma.gkbar_iahp = 0.45 #0.3
-		h.beta_iahp = 0.02								# correct re: jun.pdf
-		h.cac_iahp = 8e-04
-		soma.ratc_iahp = 0.2 							# low-thresh pool (IT)
-		soma.ratC_iahp = 1 #0.8 							# high-thresh pool (IL)
-		# soma.ek2_iahp = -95 # added from Erica's Github
-
-		# IT current
-		soma.insert('it2INT')
-		soma.gcabar_it2INT = 0.4e-04  #1.0e-4
-		soma.shift1_it2INT = 7
-		h.shift2_it2INT = 0
-		h.mx_it2INT = 3.0
-		h.hx_it2INT = 1.5
-		h.sm_it2INT = 4.8
-		h.sh_it2INT = 4.6
-
-
-		# CALCIUM PUMP FOR "ca" ION POOL - associated with IT
-		soma.insert('cad_int')
-		soma.taur_cad_int  = 150
-		soma.taur2_cad_int  = 80
-		soma.cainf_cad_int = 1e-8
-		soma.cainf2_cad_int  = 5.3e-5 #5.2e-5
-		soma.kt_cad_int = 0
-		soma.kt2_cad_int = 0
-		soma.k_cad_int  = 7.5e-3 #5e-3
-		soma.kd_cad_int = 9e-4
-		h.kd2_cad_int = 9e-4
-
-
-		# IL current 
-		soma.insert('icalINT')
-		soma.pcabar_icalINT = 0.00009 #0.0006
-		h.sh1_icalINT = -10
-		h.sh2_icalINT = 0
-
-
-		# CALCIUM PUMP FOR "Ca" ION POOL -- associated with IL 
-		soma.insert('Cad_int')
-		soma.taur_Cad_int  = 150
-		soma.taur2_Cad_int = 80
-		soma.Cainf_Cad_int  = 1e-8
-		soma.Cainf2_Cad_int  = 5.2e-5
-		soma.kt_Cad_int = 0
-		soma.kt2_Cad_int = 0
-		soma.k_Cad_int  = 5e-3
-		soma.kd_Cad_int = 9e-4
-		h.kd2_Cad_int = 9e-4
-		h.Cai0_Ca_ion = 5e-5 # added from Erica's Github
-		h.Cao0_Ca_ion = 2 # added from Erica's Github
-
-
-		### INPUT RESISTANCE VALUES: 
-		# soma.gbar_icanINT = 0.001
-		# soma.ghbar_iar = 2e-3 
-		# soma.gkbar_iahp = 1.4 
-
-
-
-
 
     def initdend(self):
         dend = self.dend
@@ -169,10 +52,6 @@ class sTI_cell:
         dend.insert('Pass')
         dend.g_Pass = 13e-06
         dend.erev_Pass = -74
-# PROXIMAL DENDRITES
-		dend.insert('Pass')
-		dend.g_Pass = g_Pass
-		dend.erev_Pass = -7
 
 
 ###############################
@@ -276,6 +155,136 @@ v_vec.record(cell.soma(0.5)._ref_v)
 # 	sec.Ra = 120 
 
 
+
+
+#############################################
+############# INSERT MECHANISMS #############
+#############################################
+
+# LEAK CURRENT ##
+g_Pass = 2.5e-05 
+# SOMA
+cell.soma.insert('Pass')
+cell.soma.g_Pass = g_Pass 
+cell.soma.erev_Pass = -72 
+
+# PROXIMAL DENDRITES
+cell.dend.insert('Pass')
+cell.dend.g_Pass = g_Pass
+cell.dend.erev_Pass = -7
+
+
+# # DISTAL DENDRITES 
+# for dist_dend in dist_dends: 
+# 	dist_dend.insert('Pass')
+# 	dist_dend.g_Pass = g_Pass
+# 	dist_dend.erev_Pass = -72
+
+## Adding soma parameters from mechanisms in Erica's Github ##
+cell.soma.insert('Cad_int')
+cell.soma.Cainf_Cad_int = 1e-8
+cell.soma.k_Cad_int = 0.005
+cell.soma.taur_Cad_int = 150.0
+
+
+##FAST SODIUM 
+cell.soma.insert('naf2')
+cell.soma.gmax_naf2     = 0.1 #0.042
+cell.soma.mvhalf_naf2   = -40
+cell.soma.mvalence_naf2 =  5
+cell.soma.hvhalf_naf2   = -43
+cell.soma.hvalence_naf2 = -6
+
+
+
+# POTASSIUM DELAYED RECTIFIER -- ORIGINAL
+cell.soma.insert('kdr2orig')
+cell.soma.ek = -95
+cell.soma.gmax_kdr2orig     	= 0.1
+cell.soma.mvhalf_kdr2orig  	= -31
+cell.soma.mvalence_kdr2orig 	=  3.8
+
+# IH current
+cell.soma.insert('iar')
+cell.soma.ghbar_iar =  0.7e-04   # 1.3e-4		# 0.13 mS/cm2; correct re: jun.pdf
+cell.soma.shift_iar = -0.0
+#h.erev_iar = -44 	# ALREADY THE DEFAULT VALUE IN .mod 
+#h.stp_iar = 7.4 	# ALREADY THE DEFAULT VALUE IN .mod 
+
+
+# ICAN current
+cell.soma.insert('icanINT')
+cell.soma.gbar_icanINT = 0.0001 #0.0003
+h.beta_icanINT = 0.003							# correct re: jun.pdf
+h.cac_icanINT = 1.1e-04
+cell.soma.ratc_icanINT = 0.8 #1	 						# low-thresh pool (IT)
+cell.soma.ratC_icanINT = 0.1 #0.2							# high-thresh pool (IL)
+h.x_icanINT = 8									# correct re: jun.pdf, if x_ican == "n"
+
+
+# IAHP current
+cell.soma.insert('iahp')
+cell.soma.gkbar_iahp = 0.45 #0.3
+h.beta_iahp = 0.02								# correct re: jun.pdf
+h.cac_iahp = 8e-04
+cell.soma.ratc_iahp = 0.2 							# low-thresh pool (IT)
+cell.soma.ratC_iahp = 1 #0.8 							# high-thresh pool (IL)
+# soma.ek2_iahp = -95 # added from Erica's Github
+
+# IT current
+cell.soma.insert('it2INT')
+cell.soma.gcabar_it2INT = 0.4e-04  #1.0e-4
+cell.soma.shift1_it2INT = 7
+h.shift2_it2INT = 0
+h.mx_it2INT = 3.0
+h.hx_it2INT = 1.5
+h.sm_it2INT = 4.8
+h.sh_it2INT = 4.6
+
+
+# CALCIUM PUMP FOR "ca" ION POOL - associated with IT
+cell.soma.insert('cad_int')
+cell.soma.taur_cad_int  = 150
+cell.soma.taur2_cad_int  = 80
+cell.soma.cainf_cad_int = 1e-8
+cell.soma.cainf2_cad_int  = 5.3e-5 #5.2e-5
+cell.soma.kt_cad_int = 0
+cell.soma.kt2_cad_int = 0
+cell.soma.k_cad_int  = 7.5e-3 #5e-3
+cell.soma.kd_cad_int = 9e-4
+h.kd2_cad_int = 9e-4
+
+
+# IL current 
+cell.soma.insert('icalINT')
+cell.soma.pcabar_icalINT = 0.00009 #0.0006
+h.sh1_icalINT = -10
+h.sh2_icalINT = 0
+
+
+# CALCIUM PUMP FOR "Ca" ION POOL -- associated with IL 
+cell.soma.insert('Cad_int')
+cell.soma.taur_Cad_int  = 150
+cell.soma.taur2_Cad_int = 80
+cell.soma.Cainf_Cad_int  = 1e-8
+cell.soma.Cainf2_Cad_int  = 5.2e-5
+cell.soma.kt_Cad_int = 0
+cell.soma.kt2_Cad_int = 0
+cell.soma.k_Cad_int  = 5e-3
+cell.soma.kd_Cad_int = 9e-4
+h.kd2_Cad_int = 9e-4
+h.Cai0_Ca_ion = 5e-5 # added from Erica's Github
+h.Cao0_Ca_ion = 2 # added from Erica's Github
+
+
+### INPUT RESISTANCE VALUES: 
+# soma.gbar_icanINT = 0.001
+# soma.ghbar_iar = 2e-3 
+# soma.gkbar_iahp = 1.4 
+
+
+
+
 # #############################################
 # ########### CHANGE ION PARAMETERS ###########
 # #############################################
@@ -307,7 +316,6 @@ h.k2o0_k2_ion = 2.5
 
 h.ki0_k_ion = 54.5
 h.ko0_k_ion = 2.5 
-
 
 ## INITIALIZE CHANGES
 h.v_init = -66

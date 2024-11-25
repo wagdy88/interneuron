@@ -9,6 +9,51 @@ import numpy as np
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
 rc('text', usetex=True)
 
+#############################################
+############## ADD CELL CLASS ###############
+#############################################
+
+
+class sTI_cell:
+    def __init__(self, x=0, y=0, z=0, ID=0, ty=0):
+        self.x = x
+        self.y = y
+        self.z = z
+        self.ID = ID
+        self.ty = ty
+        self.soma = soma = h.Section(name='soma', cell=self)
+        self.dend = dend = h.Section(name='dend', cell=self)
+        self.dend.connect(self.soma(0), 0)  # Connect dend(0) to soma(0)
+        for sec in [self.soma, self.dend]:
+            sec.Ra = 120
+        self.initsoma()
+        self.initdend()
+
+    def initsoma(self):
+        soma = self.soma
+        soma.nseg = 1
+        soma.diam = 10
+        soma.L = 16
+        soma.cm = 1
+        ## Insert mechanisms with parameters
+        soma.insert('Pass')
+        soma.g_Pass = 13e-06
+        soma.erev_Pass = -74
+        soma.insert('naf2')
+        soma.gmax_naf2 = 0.1
+        # Continue with other parameters...
+
+    def initdend(self):
+        dend = self.dend
+        dend.nseg = 1
+        dend.diam = 3.25
+        dend.L = 240
+        dend.cm = 1
+        dend.insert('Pass')
+        dend.g_Pass = 13e-06
+        dend.erev_Pass = -74
+
+
 ###############################
 ### ADDING GLOBAL PARAMETERS###
 ###############################
@@ -34,36 +79,53 @@ h.x_icanINT = 8.0
 ############## CREATE SECTIONS ##############
 #############################################
 
-######## CREATE SOMA ######## 
-soma = h.Section(name='soma')
-soma.nseg = 1
-soma.diam = 10
-soma.L = 16
-soma.cm = 1
+# Instantiate cell and replace previous soma/dend setup
+cell = sTI_cell()
+
+# Modify the script to use cell.soma and cell.dend
+stim = h.IClamp(cell.soma(0.5))
+stim.delay = 1000
+stim.dur = 750
+stim.amp = 0.11
+
+# Adjust recording vectors
+t_vec = h.Vector()
+t_vec.record(h._ref_t)
+
+v_vec = h.Vector()
+v_vec.record(cell.soma(0.5)._ref_v)
 
 
-################## CREATE DENDRITES #################### 
-dend = [h.Section(name='dend[%d]' % i) for i in range(14)]
-
-### PROXIMAL DENDRITES ### 
-prox_dends = dend[0:2]
-
-secLists = {
-    "all": [soma, dend[0], dend[1]],
-    "dend_all": [dend[0], dend[1]],
-    "proximal": [soma, dend[0], dend[1]]
-}
+# ######## CREATE SOMA ######## 
+# soma = h.Section(name='soma')
+# soma.nseg = 1
+# soma.diam = 10
+# soma.L = 16
+# soma.cm = 1
 
 
-dend[0].L = 240.0
-dend[0].Ra = 120.0
-dend[0].cm = 1.0
-dend[0].diam = 3.25
-dend[0].nseg = 1
-dend[0].insert('Pass')
-dend[0].g_Pass = 1.3e-05
-dend[0].erev_Pass = -74.0
-dend[0].connect(soma(0), 0)
+# ################## CREATE DENDRITES #################### 
+# dend = [h.Section(name='dend[%d]' % i) for i in range(14)]
+
+# ### PROXIMAL DENDRITES ### 
+# prox_dends = dend[0:2]
+
+# secLists = {
+#     "all": [soma, dend[0], dend[1]],
+#     "dend_all": [dend[0], dend[1]],
+#     "proximal": [soma, dend[0], dend[1]]
+# }
+
+
+# dend[0].L = 240.0
+# dend[0].Ra = 120.0
+# dend[0].cm = 1.0
+# dend[0].diam = 3.25
+# dend[0].nseg = 1
+# dend[0].insert('Pass')
+# dend[0].g_Pass = 1.3e-05
+# dend[0].erev_Pass = -74.0
+# dend[0].connect(soma(0), 0)
 
 # #### DISTAL DENDRITES ####
 # dist_dends = dend[2:]
@@ -77,8 +139,8 @@ dend[0].connect(soma(0), 0)
 
 # #### CONNECT SECTIONS #####
 # ## PROXIMAL DENDRITES ## 
-dend[0].connect(soma(0),0) 		# '0' end of dend[0] connects to '0' end of soma
-dend[1].connect(soma(1),0)		# '0' end of dend[1] connects to '1' end of soma
+# dend[0].connect(soma(0),0) 		# '0' end of dend[0] connects to '0' end of soma
+# dend[1].connect(soma(1),0)		# '0' end of dend[1] connects to '1' end of soma
 
 # ## DISTAL DENDRITES PART 1 (dend[2] thru dend[7]) ## 
 # for ndend in dist_dends[0:6]:
@@ -89,8 +151,8 @@ dend[1].connect(soma(1),0)		# '0' end of dend[1] connects to '1' end of soma
 # 	ndend.connect(dend[1](1), 0)
 
 ## SET Ra FOR ALL SECTIONS (SOMA & ALL DENDRITES) ## 
-for sec in h.allsec():
-	sec.Ra = 120 
+# for sec in h.allsec():
+# 	sec.Ra = 120 
 
 
 
@@ -102,15 +164,14 @@ for sec in h.allsec():
 # LEAK CURRENT ##
 g_Pass = 2.5e-05 
 # SOMA
-soma.insert('Pass')
-soma.g_Pass = g_Pass 
-soma.erev_Pass = -72 
+cell.soma.insert('Pass')
+cell.soma.g_Pass = g_Pass 
+cell.soma.erev_Pass = -72 
 
 # PROXIMAL DENDRITES
-for prox_dend in prox_dends:
- 	prox_dend.insert('Pass')
- 	prox_dend.g_Pass = g_Pass
- 	prox_dend.erev_Pass = -7
+cell.dend.insert('Pass')
+cell.dend.g_Pass = g_Pass
+cell.dend.erev_Pass = -7
 
 
 # # DISTAL DENDRITES 
@@ -120,60 +181,60 @@ for prox_dend in prox_dends:
 # 	dist_dend.erev_Pass = -72
 
 ## Adding soma parameters from mechanisms in Erica's Github ##
-soma.insert('Cad_int')
-soma.Cainf_Cad_int = 1e-8
-soma.k_Cad_int = 0.005
-soma.taur_Cad_int = 150.0
+cell.soma.insert('Cad_int')
+cell.soma.Cainf_Cad_int = 1e-8
+cell.soma.k_Cad_int = 0.005
+cell.soma.taur_Cad_int = 150.0
 
 
 ##FAST SODIUM 
-soma.insert('naf2')
-soma.gmax_naf2     = 0.1 #0.042
-soma.mvhalf_naf2   = -40
-soma.mvalence_naf2 =  5
-soma.hvhalf_naf2   = -43
-soma.hvalence_naf2 = -6
+cell.soma.insert('naf2')
+cell.soma.gmax_naf2     = 0.1 #0.042
+cell.soma.mvhalf_naf2   = -40
+cell.soma.mvalence_naf2 =  5
+cell.soma.hvhalf_naf2   = -43
+cell.soma.hvalence_naf2 = -6
 
 
 
 # POTASSIUM DELAYED RECTIFIER -- ORIGINAL
-soma.insert('kdr2orig')
-soma.ek = -95
-soma.gmax_kdr2orig     	= 0.1
-soma.mvhalf_kdr2orig  	= -31
-soma.mvalence_kdr2orig 	=  3.8
+cell.soma.insert('kdr2orig')
+cell.soma.ek = -95
+cell.soma.gmax_kdr2orig     	= 0.1
+cell.soma.mvhalf_kdr2orig  	= -31
+cell.soma.mvalence_kdr2orig 	=  3.8
 
 # IH current
-soma.insert('iar')
-soma.ghbar_iar =  0.7e-04   # 1.3e-4		# 0.13 mS/cm2; correct re: jun.pdf
-soma.shift_iar = -0.0
+cell.soma.insert('iar')
+cell.soma.ghbar_iar =  0.7e-04   # 1.3e-4		# 0.13 mS/cm2; correct re: jun.pdf
+cell.soma.shift_iar = -0.0
 #h.erev_iar = -44 	# ALREADY THE DEFAULT VALUE IN .mod 
 #h.stp_iar = 7.4 	# ALREADY THE DEFAULT VALUE IN .mod 
 
 
 # ICAN current
-soma.insert('icanINT')
-soma.gbar_icanINT = 0.0001 #0.0003
+cell.soma.insert('icanINT')
+cell.soma.gbar_icanINT = 0.0001 #0.0003
 h.beta_icanINT = 0.003							# correct re: jun.pdf
 h.cac_icanINT = 1.1e-04
-soma.ratc_icanINT = 0.8 #1	 						# low-thresh pool (IT)
-soma.ratC_icanINT = 0.1 #0.2							# high-thresh pool (IL)
+cell.soma.ratc_icanINT = 0.8 #1	 						# low-thresh pool (IT)
+cell.soma.ratC_icanINT = 0.1 #0.2							# high-thresh pool (IL)
 h.x_icanINT = 8									# correct re: jun.pdf, if x_ican == "n"
 
 
 # IAHP current
-soma.insert('iahp')
-soma.gkbar_iahp = 0.45 #0.3
+cell.soma.insert('iahp')
+cell.soma.gkbar_iahp = 0.45 #0.3
 h.beta_iahp = 0.02								# correct re: jun.pdf
 h.cac_iahp = 8e-04
-soma.ratc_iahp = 0.2 							# low-thresh pool (IT)
-soma.ratC_iahp = 1 #0.8 							# high-thresh pool (IL)
+cell.soma.ratc_iahp = 0.2 							# low-thresh pool (IT)
+cell.soma.ratC_iahp = 1 #0.8 							# high-thresh pool (IL)
 # soma.ek2_iahp = -95 # added from Erica's Github
 
 # IT current
-soma.insert('it2INT')
-soma.gcabar_it2INT = 0.4e-04  #1.0e-4
-soma.shift1_it2INT = 7
+cell.soma.insert('it2INT')
+cell.soma.gcabar_it2INT = 0.4e-04  #1.0e-4
+cell.soma.shift1_it2INT = 7
 h.shift2_it2INT = 0
 h.mx_it2INT = 3.0
 h.hx_it2INT = 1.5
@@ -182,35 +243,35 @@ h.sh_it2INT = 4.6
 
 
 # CALCIUM PUMP FOR "ca" ION POOL - associated with IT
-soma.insert('cad_int')
-soma.taur_cad_int  = 150
-soma.taur2_cad_int  = 80
-soma.cainf_cad_int = 1e-8
-soma.cainf2_cad_int  = 5.3e-5 #5.2e-5
-soma.kt_cad_int = 0
-soma.kt2_cad_int = 0
-soma.k_cad_int  = 7.5e-3 #5e-3
-soma.kd_cad_int = 9e-4
+cell.soma.insert('cad_int')
+cell.soma.taur_cad_int  = 150
+cell.soma.taur2_cad_int  = 80
+cell.soma.cainf_cad_int = 1e-8
+cell.soma.cainf2_cad_int  = 5.3e-5 #5.2e-5
+cell.soma.kt_cad_int = 0
+cell.soma.kt2_cad_int = 0
+cell.soma.k_cad_int  = 7.5e-3 #5e-3
+cell.soma.kd_cad_int = 9e-4
 h.kd2_cad_int = 9e-4
 
 
 # IL current 
-soma.insert('icalINT')
-soma.pcabar_icalINT = 0.00009 #0.0006
+cell.soma.insert('icalINT')
+cell.soma.pcabar_icalINT = 0.00009 #0.0006
 h.sh1_icalINT = -10
 h.sh2_icalINT = 0
 
 
 # CALCIUM PUMP FOR "Ca" ION POOL -- associated with IL 
-soma.insert('Cad_int')
-soma.taur_Cad_int  = 150
-soma.taur2_Cad_int = 80
-soma.Cainf_Cad_int  = 1e-8
-soma.Cainf2_Cad_int  = 5.2e-5
-soma.kt_Cad_int = 0
-soma.kt2_Cad_int = 0
-soma.k_Cad_int  = 5e-3
-soma.kd_Cad_int = 9e-4
+cell.soma.insert('Cad_int')
+cell.soma.taur_Cad_int  = 150
+cell.soma.taur2_Cad_int = 80
+cell.soma.Cainf_Cad_int  = 1e-8
+cell.soma.Cainf2_Cad_int  = 5.2e-5
+cell.soma.kt_Cad_int = 0
+cell.soma.kt2_Cad_int = 0
+cell.soma.k_Cad_int  = 5e-3
+cell.soma.kd_Cad_int = 9e-4
 h.kd2_Cad_int = 9e-4
 h.Cai0_Ca_ion = 5e-5 # added from Erica's Github
 h.Cao0_Ca_ion = 2 # added from Erica's Github
@@ -265,10 +326,10 @@ h.finitialize(-66)
 ######### STIM OBJECT #########
 ##################################
 
-stim = h.IClamp(soma(0.5))
-stim.delay = 1000
-stim.dur = 750 
-stim.amp = 0.11
+# stim = h.IClamp(soma(0.5))
+# stim.delay = 1000
+# stim.dur = 750 
+# stim.amp = 0.11
 
 
 ###################################
@@ -276,12 +337,12 @@ stim.amp = 0.11
 ###################################
 
 ### TIME
-t_vec = h.Vector()
-t_vec.record(h._ref_t)
+# t_vec = h.Vector()
+# t_vec.record(h._ref_t)
 
-### VOLTAGE
-v_vec = h.Vector()
-v_vec.record(soma(0.5)._ref_v)
+# ### VOLTAGE
+# v_vec = h.Vector()
+# v_vec.record(soma(0.5)._ref_v)
 
 
 ##################
@@ -290,36 +351,36 @@ v_vec.record(soma(0.5)._ref_v)
 
 ### LEAK CURRENT
 iPass_vec = h.Vector()
-iPass_vec.record(soma(0.5)._ref_i_Pass)
+iPass_vec.record(cell.soma(0.5)._ref_i_Pass)
 
 ### FAST SODIUM CURRENT
 ina_vec = h.Vector()
-ina_vec.record(soma(0.5)._ref_ina)
+ina_vec.record(cell.soma(0.5)._ref_ina)
 
 
 ### K+ DELAYED RECTIFIER CURRENT
 ik_vec = h.Vector()
-ik_vec.record(soma(0.5)._ref_ik)
+ik_vec.record(cell.soma(0.5)._ref_ik)
 
 ### IH CURRENT
 ih_vec = h.Vector()
-ih_vec.record(soma(0.5)._ref_iother)
+ih_vec.record(cell.soma(0.5)._ref_iother)
 
 # IT CURRENT -- technically "ca" current
 ica_vec_IT = h.Vector()
-ica_vec_IT.record(soma(0.5)._ref_ica)
+ica_vec_IT.record(cell.soma(0.5)._ref_ica)
 
 # IL CURRENT -- technically "Ca" current
 iCa_vec_IL = h.Vector()
-iCa_vec_IL.record(soma(0.5)._ref_iCa)
+iCa_vec_IL.record(cell.soma(0.5)._ref_iCa)
 
 # ICAN CURRENT
 ican_vec = h.Vector()
-ican_vec.record(soma(0.5)._ref_iother2)
+ican_vec.record(cell.soma(0.5)._ref_iother2)
 
 # IAHP CURRENT
 iahp_vec = h.Vector()
-iahp_vec.record(soma(0.5)._ref_ik2)
+iahp_vec.record(cell.soma(0.5)._ref_ik2)
 
 
 ################
@@ -336,19 +397,19 @@ iahp_vec.record(soma(0.5)._ref_ik2)
 
 ## POTASSIUM IONS FROM KDR2 ('K ion')
 ek_soma = h.Vector()
-ek_soma.record(soma(0.5)._ref_ek)
+ek_soma.record(cell.soma(0.5)._ref_ek)
 ki_soma = h.Vector()
-ki_soma.record(soma(0.5)._ref_ki)
+ki_soma.record(cell.soma(0.5)._ref_ki)
 ko_soma = h.Vector()
-ko_soma.record(soma(0.5)._ref_ko)
+ko_soma.record(cell.soma(0.5)._ref_ko)
 
 ### K2 POTASSIUM IONS FROM IAHP ('K2 ion')
 ek2_soma = h.Vector()
-ek2_soma.record(soma(0.5)._ref_ek2)
+ek2_soma.record(cell.soma(0.5)._ref_ek2)
 k2i_soma = h.Vector()
-k2i_soma.record(soma(0.5)._ref_k2i)
+k2i_soma.record(cell.soma(0.5)._ref_k2i)
 k2o_soma = h.Vector()
-k2o_soma.record(soma(0.5)._ref_k2o)
+k2o_soma.record(cell.soma(0.5)._ref_k2o)
 
 # ### CALCIUM EQUILIBRIUM POTENTIALS
 # eca_soma = h.Vector()
@@ -359,9 +420,9 @@ k2o_soma.record(soma(0.5)._ref_k2o)
 
 ### CALCIUM INTERNAL CONCENTRATIONS
 cai_soma = h.Vector()
-cai_soma.record(soma(0.5)._ref_cai)
+cai_soma.record(cell.soma(0.5)._ref_cai)
 Cai_soma = h.Vector() 
-Cai_soma.record(soma(0.5)._ref_Cai)
+Cai_soma.record(cell.soma(0.5)._ref_Cai)
 
 
 # ### CALCIUM EXTERNAL CONCENTRATIONS
@@ -392,7 +453,7 @@ h.run()
 
 ########### INPUT RESISTANCE 
 print('soma input resistance')
-print(soma(0.5).ri())
+print(cell.soma(0.5).ri())
 
 
 

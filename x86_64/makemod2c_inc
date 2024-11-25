@@ -1,0 +1,88 @@
+./cp2.c: ../cp2.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "cp2.mod" -o "/home/mohamed/myprojects/interneuron/data/fullCurrents/x86_64")
+
+./cp2.o: ./cp2.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./cp.c: ../cp.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "cp.mod" -o "/home/mohamed/myprojects/interneuron/data/fullCurrents/x86_64")
+
+./cp.o: ./cp.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./Iahp.c: ../Iahp.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "Iahp.mod" -o "/home/mohamed/myprojects/interneuron/data/fullCurrents/x86_64")
+
+./Iahp.o: ./Iahp.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./Ican.c: ../Ican.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "Ican.mod" -o "/home/mohamed/myprojects/interneuron/data/fullCurrents/x86_64")
+
+./Ican.o: ./Ican.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./IL.c: ../IL.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "IL.mod" -o "/home/mohamed/myprojects/interneuron/data/fullCurrents/x86_64")
+
+./IL.o: ./IL.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./kdr2_orig.c: ../kdr2_orig.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "kdr2_orig.mod" -o "/home/mohamed/myprojects/interneuron/data/fullCurrents/x86_64")
+
+./kdr2_orig.o: ./kdr2_orig.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./naf2.c: ../naf2.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "naf2.mod" -o "/home/mohamed/myprojects/interneuron/data/fullCurrents/x86_64")
+
+./naf2.o: ./naf2.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./nthh.c: ../nthh.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "nthh.mod" -o "/home/mohamed/myprojects/interneuron/data/fullCurrents/x86_64")
+
+./nthh.o: ./nthh.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./ntIh.c: ../ntIh.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "ntIh.mod" -o "/home/mohamed/myprojects/interneuron/data/fullCurrents/x86_64")
+
+./ntIh.o: ./ntIh.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./ntleak.c: ../ntleak.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "ntleak.mod" -o "/home/mohamed/myprojects/interneuron/data/fullCurrents/x86_64")
+
+./ntleak.o: ./ntleak.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+
+./ntt_int.c: ../ntt_int.mod
+	@printf " -> $(C_GREEN)NMODL$(C_RESET) $<\\n"
+	(cd "..";  MODLUNIT=$(NRNUNITS) $(NOCMODL) "ntt_int.mod" -o "/home/mohamed/myprojects/interneuron/data/fullCurrents/x86_64")
+
+./ntt_int.o: ./ntt_int.c
+	@printf " -> $(C_GREEN)Compiling$(C_RESET) $<\\n"
+	$(COMPILE) -I".." $(INCLUDES) -fPIC -c $< -o $@
+

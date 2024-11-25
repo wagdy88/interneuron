@@ -1,3 +1,4 @@
+from sTI_cell import sTI_cell
 from neuron import h, gui
 import matplotlib.pyplot as plt 
 from matplotlib import rc  # for font rendering (see below)
@@ -14,44 +15,44 @@ rc('text', usetex=True)
 #############################################
 
 
-class sTI_cell:
-    def __init__(self, x=0, y=0, z=0, ID=0, ty=0):
-        self.x = x
-        self.y = y
-        self.z = z
-        self.ID = ID
-        self.ty = ty
-        self.soma = soma = h.Section(name='soma', cell=self)
-        self.dend = dend = h.Section(name='dend', cell=self)
-        self.dend.connect(self.soma(0), 0)  # Connect dend(0) to soma(0)
-        for sec in [self.soma, self.dend]:
-            sec.Ra = 120
-        self.initsoma()
-        self.initdend()
+# class sTI_cell:
+#     def __init__(self, x=0, y=0, z=0, ID=0, ty=0):
+#         self.x = x
+#         self.y = y
+#         self.z = z
+#         self.ID = ID
+#         self.ty = ty
+#         self.soma = soma = h.Section(name='soma', cell=self)
+#         self.dend = dend = h.Section(name='dend', cell=self)
+#         self.dend.connect(self.soma(0), 0)  # Connect dend(0) to soma(0)
+#         for sec in [self.soma, self.dend]:
+#             sec.Ra = 120
+#         self.initsoma()
+#         self.initdend()
 
-    def initsoma(self):
-        soma = self.soma
-        soma.nseg = 1
-        soma.diam = 10
-        soma.L = 16
-        soma.cm = 1
-        ## Insert mechanisms with parameters
-        soma.insert('Pass')
-        soma.g_Pass = 13e-06
-        soma.erev_Pass = -74
-        soma.insert('naf2')
-        soma.gmax_naf2 = 0.1
-        # Continue with other parameters...
+#     def initsoma(self):
+#         soma = self.soma
+#         soma.nseg = 1
+#         soma.diam = 10
+#         soma.L = 16
+#         soma.cm = 1
+#         ## Insert mechanisms with parameters
+#         soma.insert('Pass')
+#         soma.g_Pass = 13e-06
+#         soma.erev_Pass = -74
+#         soma.insert('naf2')
+#         soma.gmax_naf2 = 0.1
+#         # Continue with other parameters...
 
-    def initdend(self):
-        dend = self.dend
-        dend.nseg = 1
-        dend.diam = 3.25
-        dend.L = 240
-        dend.cm = 1
-        dend.insert('Pass')
-        dend.g_Pass = 13e-06
-        dend.erev_Pass = -74
+#     def initdend(self):
+#         dend = self.dend
+#         dend.nseg = 1
+#         dend.diam = 3.25
+#         dend.L = 240
+#         dend.cm = 1
+#         dend.insert('Pass')
+#         dend.g_Pass = 13e-06
+#         dend.erev_Pass = -74
 
 
 ###############################
@@ -80,7 +81,7 @@ h.x_icanINT = 8.0
 #############################################
 
 # Instantiate cell and replace previous soma/dend setup
-cell = sTI_cell()
+cell = sTI_cell('TI_reduced_cellParams.json')
 
 # Modify the script to use cell.soma and cell.dend
 stim = h.IClamp(cell.soma(0.5))

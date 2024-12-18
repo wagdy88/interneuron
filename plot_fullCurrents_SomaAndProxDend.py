@@ -81,7 +81,9 @@ h.x_icanINT = 8.0
 #############################################
 
 # Instantiate cell and replace previous soma/dend setup
-cell = sTI_cell(param_file='TI_reduced_cellParams.json', useJson=True)
+#cell = sTI_cell(param_file='TI_reduced_cellParams.json', useJson=True)
+
+cell = sTI_cell(param_file=None, useJson=False)
 
 # Modify the script to use cell.soma and cell.dend
 stim = h.IClamp(cell.soma(0.5))

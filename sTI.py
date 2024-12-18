@@ -13,6 +13,12 @@ class sTI_cell:
         self.ty = ty
         self.useJson = useJson
 
+        self.soma = h.Section(name='soma', cell=self)
+        self.dend = h.Section(name='dend', cell=self)
+        self.dend.connect(self.soma, 0, 0)  # connect dend(0), soma(0)
+        for sec in [self.soma, self.dend]:
+            sec.Ra = 120
+
         if self.useJson and param_file:
             # Load parameters from JSON file
             with open(param_file, 'r') as f:
@@ -20,12 +26,6 @@ class sTI_cell:
         else:
             # Use default parameters from fullCurrents.py
             self.params = self.default_params()
-
-        self.soma = soma = h.Section(name='soma', cell=self)
-        self.dend = dend = h.Section(name='dend', cell=self)
-        self.dend.connect(self.soma, 0, 0)  # connect dend(0), soma(0)
-        for sec in [self.soma, self.dend]:
-            sec.Ra = 120
         self.initsoma()
         self.initdend()
 

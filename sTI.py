@@ -184,11 +184,12 @@ class sTI_cell:
         soma.cm = 1
         ## Passive current
         soma.insert('Pass') #ntleak.mod
-        soma.g_Pass = 13e-06
+        soma.g_Pass = 2e-06
         soma.erev_Pass = -74
         ## Fast sodium 
         soma.insert('naf2')
-        soma.gmax_naf2     = 0.1
+        # soma.gmax_naf2     = 0.1
+        soma.gmax_naf2     = 0.02 # fixd the amplitude of spikes vs. full model
         soma.mvhalf_naf2   = -40
         soma.mvalence_naf2 =  5
         soma.hvhalf_naf2   = -43
@@ -213,7 +214,8 @@ class sTI_cell:
         h.x_icanINT = 8                   # correct re: jun.pdf, if x_ican == "n"
         ## IAHP current 
         soma.insert('iahp')
-        soma.gkbar_iahp = 0.45
+        # soma.gkbar_iahp = 0.45
+        soma.gkbar_iahp = 0.9 # better interspike interval close to full model
         h.beta_iahp = 0.02      # correct re: jun.pdf
         h.cac_iahp = 8e-04
         soma.ratc_iahp = 0.2   
@@ -221,7 +223,8 @@ class sTI_cell:
         soma.ek2 = -95 
         ## IT current (low-thresh calcium pool)
         soma.insert('it2INT')
-        soma.gcabar_it2INT = 0.4e-04  
+        # soma.gcabar_it2INT = 0.4e-04
+        soma.gcabar_it2INT = 0.4e-04 *5
         soma.shift1_it2INT = 7    # correct re: jun.pdf
         h.shift2_it2INT = 0       # correct re: jun.pdf # h used bc GLOBAL var in ntt.mod
         h.mx_it2INT = 3.0         # correct re: jun.pdf # h used bc GLOBAL var in ntt.mod

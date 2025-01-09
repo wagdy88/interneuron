@@ -5,6 +5,7 @@ from matplotlib import rc  # for font rendering (see below)
 from netpyne.support.scalebar import add_scalebar
 from matplotlib.ticker import FormatStrFormatter # for adding units to y axis 
 import numpy as np
+import csv
 
 ### USE LATEX FOR FONT RENDERING ###
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
@@ -81,9 +82,9 @@ h.x_icanINT = 8.0
 #############################################
 
 # Instantiate cell and replace previous soma/dend setup
-#cell = sTI_cell(param_file='TI_reduced_cellParams.json', useJson=True)
-
 cell = sTI_cell(param_file='TI_reduced_cellParams.json', useJson=True)
+
+# cell = sTI_cell(param_file=None, useJson=False)
 
 # Modify the script to use cell.soma and cell.dend
 stim = h.IClamp(cell.soma(0.5))
@@ -334,7 +335,6 @@ h.finitialize(-66)
 # stim.dur = 750 
 # stim.amp = 0.11
 
-
 ###################################
 ######### RECORDING #########
 ###################################
@@ -458,6 +458,12 @@ h.run()
 print('soma input resistance')
 print(cell.soma(0.5).ri())
 
+# After simulation ends, save data to CSV
+with open("fullCurrents_TwoComp_Json_data.csv", "w", newline="") as f:
+    writer = csv.writer(f)
+    writer.writerow(["Time (ms)", "Soma Voltage (mV)"])
+    for t, v in zip(t_vec, v_vec):
+        writer.writerow([t, v])
 
 
 
@@ -495,155 +501,155 @@ if allCurrents:
 
 	# ENTER WHICH CURRENTS TO PLOT 
 	### vecsToPlot = ['voltage', 'IAHP', 'ICAN', 'IH', 'leak', 'INaf', 'IL', 'Ca', 'IT', 'ca']
-	vecsToPlot = ['voltage', 'IT', 'ca', 'ICAN', 'INaf', 'IL', 'Ca', 'IAHP']
+# 	vecsToPlot = ['voltage', 'IT', 'ca', 'ICAN', 'INaf', 'IL', 'Ca', 'IAHP']
 
 
-	# SLICE TIME VEC IF NECESSARY
-	t_vec = list(t_vec)
-	t_vec_allCurrents = t_vec[25000:] # USE SAME IN LOOP BELOW 
+# 	# SLICE TIME VEC IF NECESSARY
+# 	t_vec = list(t_vec)
+# 	t_vec_allCurrents = t_vec[25000:] # USE SAME IN LOOP BELOW 
 
-	time_points = [500, 1000]
+# 	time_points = [500, 1000]
 
-	# CREATE SUBPLOTS 
-	fig,ax = plt.subplots(nrows = len(vecsToPlot), ncols = 1, sharex=True)
+# 	# CREATE SUBPLOTS 
+# 	fig,ax = plt.subplots(nrows = len(vecsToPlot), ncols = 1, sharex=True)
 
-	### WITH SCALEBAR
-	scalebar = 0 
+# 	### WITH SCALEBAR
+# 	scalebar = 0 
 
-	if scalebar:
-		for i,vec in enumerate(vecsToPlot):
-			vecToPlot = vecInfo[vec]['vec']
-			vecToPlot = list(vecToPlot)
-			vecToPlot = vecToPlot[25000:]
-			if vec == 'voltage':
-				add_scalebar(ax[i],hidey=False,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='mV',barcolor=vecInfo[vec]['color'],loc=4) 
+# 	if scalebar:
+# 		for i,vec in enumerate(vecsToPlot):
+# 			vecToPlot = vecInfo[vec]['vec']
+# 			vecToPlot = list(vecToPlot)
+# 			vecToPlot = vecToPlot[25000:]
+# 			if vec == 'voltage':
+# 				add_scalebar(ax[i],hidey=False,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='mV',barcolor=vecInfo[vec]['color'],loc=4) 
 
-			elif vec in ['leak', 'INaf', 'IKdr', 'IH', 'IT', 'IL', 'IAHP', 'ICAN']:
-				vecToPlotScaled = [i * 1000 for i in vecToPlot] 
-				vecToPlot = vecToPlotScaled
-				if vec == 'IAHP':
-					add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='pA',barcolor=vecInfo[vec]['color'],loc=4) 
-				else:
-					add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='pA',barcolor=vecInfo[vec]['color'],loc=1)
+# 			elif vec in ['leak', 'INaf', 'IKdr', 'IH', 'IT', 'IL', 'IAHP', 'ICAN']:
+# 				vecToPlotScaled = [i * 1000 for i in vecToPlot] 
+# 				vecToPlot = vecToPlotScaled
+# 				if vec == 'IAHP':
+# 					add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='pA',barcolor=vecInfo[vec]['color'],loc=4) 
+# 				else:
+# 					add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='pA',barcolor=vecInfo[vec]['color'],loc=1)
 
-			elif vec in ['ca', 'Ca']:
-				vecToPlotScaled = [i * 1000000 for i in vecToPlot]
-				vecToPlot = vecToPlotScaled
-				add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='nM',barcolor=vecInfo[vec]['color'],loc=4)
-
-
-			ax[i].plot(t_vec_allCurrents,vecToPlot, color=vecInfo[vec]['color'],label=vecInfo[vec]['label'])
-			ax[i].set_title(vecInfo[vec]['label'], x=0.1,y=0.25, color=vecInfo[vec]['color']) 
+# 			elif vec in ['ca', 'Ca']:
+# 				vecToPlotScaled = [i * 1000000 for i in vecToPlot]
+# 				vecToPlot = vecToPlotScaled
+# 				add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='nM',barcolor=vecInfo[vec]['color'],loc=4)
 
 
-	### WITH AXES & SCALEBAR FOR VOLTAGE <-- USE THIS AS DEFAULT OPTION!! 
-	else:
-		for i,vec in enumerate(vecsToPlot):
-			vecToPlot = vecInfo[vec]['vec']
-			vecToPlot = list(vecToPlot)
-			vecToPlot = vecToPlot[25000:]
+# 			ax[i].plot(t_vec_allCurrents,vecToPlot, color=vecInfo[vec]['color'],label=vecInfo[vec]['label'])
+# 			ax[i].set_title(vecInfo[vec]['label'], x=0.1,y=0.25, color=vecInfo[vec]['color']) 
 
 
-			if vec == 'voltage':
-				formatter = FormatStrFormatter('%d mV')
-				add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='mV',barcolor=vecInfo[vec]['color'],loc=4) 
+# 	### WITH AXES & SCALEBAR FOR VOLTAGE <-- USE THIS AS DEFAULT OPTION!! 
+# 	else:
+# 		for i,vec in enumerate(vecsToPlot):
+# 			vecToPlot = vecInfo[vec]['vec']
+# 			vecToPlot = list(vecToPlot)
+# 			vecToPlot = vecToPlot[25000:]
 
 
-			elif vec in ['leak', 'INaf', 'IKdr', 'IH', 'IT', 'IL', 'IAHP', 'ICAN']:
-				vecToPlotScaled = [i * 1000 for i in vecToPlot] 
-				vecToPlot = vecToPlotScaled
-				formatter = FormatStrFormatter('%d pA')
-				ytickmin = vecInfo[vec]['ytickmin']
-				ytickmax = vecInfo[vec]['ytickmax']
-				ax[i].spines['right'].set_bounds(ytickmin, ytickmax) # set y axis label bounds 
-				yticks = np.linspace(ytickmin, ytickmax, 2)
-				ax[i].set_yticks(yticks)
-
-			elif vec in ['ca', 'Ca']:
-				vecToPlotScaled = [i * 1000000 for i in vecToPlot]
-				vecToPlot = vecToPlotScaled
-				formatter = FormatStrFormatter('%d nM')
-				ytickmin = vecInfo[vec]['ytickmin']
-				ytickmax = vecInfo[vec]['ytickmax']
-				ax[i].spines['right'].set_bounds(ytickmin, ytickmax) # set y axis label bounds 
-				yticks = np.linspace(ytickmin, ytickmax, 2)
-				ax[i].set_yticks(yticks)
-
-			# set units next to y axis ticks
-			ax[i].yaxis.set_major_formatter(formatter)
-
-			# set all spines invisible except the right 
-			ax[i].spines['bottom'].set_visible(False)
-			ax[i].spines['top'].set_visible(False)
-			ax[i].spines['left'].set_visible(False)
-			ax[i].spines['right'].set_visible(True)
-
-			# set color of right spine
-			ax[i].spines['right'].set_color(vecInfo[vec]['color'])
-
-			# remove ticks on x axis 
-			for tic in ax[i].xaxis.get_major_ticks():
-				tic.tick1On = tic.tick2On = False
-				tic.label1On = tic.label2On = False
-
-			# only label the tickmarks on the right spine 
-			ax[i].yaxis.set_ticks_position('right')
-
-			# set color of y ticks 
-			ax[i].tick_params(axis='y',colors=vecInfo[vec]['color'])
+# 			if vec == 'voltage':
+# 				formatter = FormatStrFormatter('%d mV')
+# 				add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='mV',barcolor=vecInfo[vec]['color'],loc=4) 
 
 
-			# PLOT 
-			ax[i].plot(t_vec_allCurrents,vecToPlot, color=vecInfo[vec]['color'],label=vecInfo[vec]['label'])
+# 			elif vec in ['leak', 'INaf', 'IKdr', 'IH', 'IT', 'IL', 'IAHP', 'ICAN']:
+# 				vecToPlotScaled = [i * 1000 for i in vecToPlot] 
+# 				vecToPlot = vecToPlotScaled
+# 				formatter = FormatStrFormatter('%d pA')
+# 				ytickmin = vecInfo[vec]['ytickmin']
+# 				ytickmax = vecInfo[vec]['ytickmax']
+# 				ax[i].spines['right'].set_bounds(ytickmin, ytickmax) # set y axis label bounds 
+# 				yticks = np.linspace(ytickmin, ytickmax, 2)
+# 				ax[i].set_yticks(yticks)
 
-			ax[i].set_ylabel(vecInfo[vec]['label'])
+# 			elif vec in ['ca', 'Ca']:
+# 				vecToPlotScaled = [i * 1000000 for i in vecToPlot]
+# 				vecToPlot = vecToPlotScaled
+# 				formatter = FormatStrFormatter('%d nM')
+# 				ytickmin = vecInfo[vec]['ytickmin']
+# 				ytickmax = vecInfo[vec]['ytickmax']
+# 				ax[i].spines['right'].set_bounds(ytickmin, ytickmax) # set y axis label bounds 
+# 				yticks = np.linspace(ytickmin, ytickmax, 2)
+# 				ax[i].set_yticks(yticks)
 
-			ax[i].set_title(vecInfo[vec]['label'], x=0.1,y=0.25, color=vecInfo[vec]['color']) 
+# 			# set units next to y axis ticks
+# 			ax[i].yaxis.set_major_formatter(formatter)
 
-			# ADDING VERTICAL TIME BARS
-			for time_point in time_points:
-				ax[i].axvline(x=time_point, color='gray', linestyle='--', linewidth=1)
+# 			# set all spines invisible except the right 
+# 			ax[i].spines['bottom'].set_visible(False)
+# 			ax[i].spines['top'].set_visible(False)
+# 			ax[i].spines['left'].set_visible(False)
+# 			ax[i].spines['right'].set_visible(True)
 
-			# ADDING LABEL FOR X-AXIS ON LAST PLOT
-			ax[-1].set_xlabel('Time (ms)')
+# 			# set color of right spine
+# 			ax[i].spines['right'].set_color(vecInfo[vec]['color'])
 
-	plt.show()
+# 			# remove ticks on x axis 
+# 			for tic in ax[i].xaxis.get_major_ticks():
+# 				tic.tick1On = tic.tick2On = False
+# 				tic.label1On = tic.label2On = False
 
+# 			# only label the tickmarks on the right spine 
+# 			ax[i].yaxis.set_ticks_position('right')
 
-if fancyVoltage:
-	### FANCIER VOLTAGE PLOTTING 
-	t_vec = list(t_vec)
-	v_vec = list(v_vec)
-
-	plt.figure(figsize=(6,3))
-	ax = plt.gca()
-	ax.yaxis.set_label_coords(-0.07, 0.5)
-	plt.ylim(-137,10)
-
-	plt.ylabel('Voltage (mV)')
-	plt.xlabel('Time (ms)')
-	plt.plot(t_vec[37000:80000],v_vec[37000:80000],'k', label='voltage', linewidth=0.8)
-
-
-	x = [t_vec[37000], stim.delay, stim.delay + stim.dur, t_vec[80000]]
-	y = [-83,-83,-83 + 5,-83] 
-	plt.step(x,y,'k', linewidth=1)
-
-	add_scalebar(ax,hidey=True,hidex=True,matchx=True,matchy=False,sizey=10,unitsx='ms', unitsy='mV', 
-				labely='10 mV\n220pA',loc=3,pad=-2.4)
+# 			# set color of y ticks 
+# 			ax[i].tick_params(axis='y',colors=vecInfo[vec]['color'])
 
 
-	plt.show()
+# 			# PLOT 
+# 			ax[i].plot(t_vec_allCurrents,vecToPlot, color=vecInfo[vec]['color'],label=vecInfo[vec]['label'])
+
+# 			ax[i].set_ylabel(vecInfo[vec]['label'])
+
+# 			ax[i].set_title(vecInfo[vec]['label'], x=0.1,y=0.25, color=vecInfo[vec]['color']) 
+
+# 			# ADDING VERTICAL TIME BARS
+# 			for time_point in time_points:
+# 				ax[i].axvline(x=time_point, color='gray', linestyle='--', linewidth=1)
+
+# 			# ADDING LABEL FOR X-AXIS ON LAST PLOT
+# 			ax[-1].set_xlabel('Time (ms)')
+
+# 	plt.show()
 
 
-if plainVoltage:
-	plt.figure()
-	plt.plot(t_vec,v_vec,label='voltage')
-	plt.title('somatic voltage trace')
-	plt.xlabel('time (ms)')
-	plt.ylabel('voltage (mV)')
-	plt.show()
-	plt.close()
+# if fancyVoltage:
+# 	### FANCIER VOLTAGE PLOTTING 
+# 	t_vec = list(t_vec)
+# 	v_vec = list(v_vec)
+
+# 	plt.figure(figsize=(6,3))
+# 	ax = plt.gca()
+# 	ax.yaxis.set_label_coords(-0.07, 0.5)
+# 	plt.ylim(-137,10)
+
+# 	plt.ylabel('Voltage (mV)')
+# 	plt.xlabel('Time (ms)')
+# 	plt.plot(t_vec[37000:80000],v_vec[37000:80000],'k', label='voltage', linewidth=0.8)
+
+
+# 	x = [t_vec[37000], stim.delay, stim.delay + stim.dur, t_vec[80000]]
+# 	y = [-83,-83,-83 + 5,-83] 
+# 	plt.step(x,y,'k', linewidth=1)
+
+# 	add_scalebar(ax,hidey=True,hidex=True,matchx=True,matchy=False,sizey=10,unitsx='ms', unitsy='mV', 
+# 				labely='10 mV\n220pA',loc=3,pad=-2.4)
+
+
+# 	plt.show()
+
+
+# if plainVoltage:
+# 	plt.figure()
+# 	plt.plot(t_vec,v_vec,label='voltage')
+# 	plt.title('somatic voltage trace')
+# 	plt.xlabel('time (ms)')
+# 	plt.ylabel('voltage (mV)')
+# 	plt.show()
+# 	plt.close()
 
 
 ###############

@@ -50,5 +50,9 @@ axes.set_xlabel("Time (ms)")
 axes.set_ylabel("Voltage (mV)")
 axes.legend()
 
+# Zoom on vertical and horizontal axes
+axes.set_xlim(1500, 1750)
+axes.set_ylim(-80, 60)
+
 plt.tight_layout()
 plt.show()

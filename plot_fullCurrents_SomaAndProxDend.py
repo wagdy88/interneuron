@@ -6,54 +6,11 @@ from netpyne.support.scalebar import add_scalebar
 from matplotlib.ticker import FormatStrFormatter # for adding units to y axis 
 import numpy as np
 import csv
+import json
 
 ### USE LATEX FOR FONT RENDERING ###
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
 rc('text', usetex=True)
-
-#############################################
-############## ADD CELL CLASS ###############
-#############################################
-
-
-# class sTI_cell:
-#     def __init__(self, x=0, y=0, z=0, ID=0, ty=0):
-#         self.x = x
-#         self.y = y
-#         self.z = z
-#         self.ID = ID
-#         self.ty = ty
-#         self.soma = soma = h.Section(name='soma', cell=self)
-#         self.dend = dend = h.Section(name='dend', cell=self)
-#         self.dend.connect(self.soma(0), 0)  # Connect dend(0) to soma(0)
-#         for sec in [self.soma, self.dend]:
-#             sec.Ra = 120
-#         self.initsoma()
-#         self.initdend()
-
-#     def initsoma(self):
-#         soma = self.soma
-#         soma.nseg = 1
-#         soma.diam = 10
-#         soma.L = 16
-#         soma.cm = 1
-#         ## Insert mechanisms with parameters
-#         soma.insert('Pass')
-#         soma.g_Pass = 13e-06
-#         soma.erev_Pass = -74
-#         soma.insert('naf2')
-#         soma.gmax_naf2 = 0.1
-#         # Continue with other parameters...
-
-#     def initdend(self):
-#         dend = self.dend
-#         dend.nseg = 1
-#         dend.diam = 3.25
-#         dend.L = 240
-#         dend.cm = 1
-#         dend.insert('Pass')
-#         dend.g_Pass = 13e-06
-#         dend.erev_Pass = -74
 
 
 ###############################
@@ -72,10 +29,6 @@ h.sh_it2INT = 4.6
 h.shift2_it2INT = 0.0
 h.sm_it2INT = 4.8
 h.x_icanINT = 8.0
-
-
-
-
 
 #############################################
 ############## CREATE SECTIONS ##############
@@ -99,254 +52,9 @@ t_vec.record(h._ref_t)
 v_vec = h.Vector()
 v_vec.record(cell.soma(0.5)._ref_v)
 
-
-# ######## CREATE SOMA ######## 
-# soma = h.Section(name='soma')
-# soma.nseg = 1
-# soma.diam = 10
-# soma.L = 16
-# soma.cm = 1
-
-
-# ################## CREATE DENDRITES #################### 
-# dend = [h.Section(name='dend[%d]' % i) for i in range(14)]
-
-# ### PROXIMAL DENDRITES ### 
-# prox_dends = dend[0:2]
-
-# secLists = {
-#     "all": [soma, dend[0], dend[1]],
-#     "dend_all": [dend[0], dend[1]],
-#     "proximal": [soma, dend[0], dend[1]]
-# }
-
-
-# dend[0].L = 240.0
-# dend[0].Ra = 120.0
-# dend[0].cm = 1.0
-# dend[0].diam = 3.25
-# dend[0].nseg = 1
-# dend[0].insert('Pass')
-# dend[0].g_Pass = 1.3e-05
-# dend[0].erev_Pass = -74.0
-# dend[0].connect(soma(0), 0)
-
-# #### DISTAL DENDRITES ####
-# dist_dends = dend[2:]
-
-# for dist_dend in dist_dends: 
-# 	dist_dend.nseg = 1
-# 	dist_dend.diam = 1.75
-# 	dist_dend.L = 180
-# 	dist_dend.cm = 1
-
-
-# #### CONNECT SECTIONS #####
-# ## PROXIMAL DENDRITES ## 
-# dend[0].connect(soma(0),0) 		# '0' end of dend[0] connects to '0' end of soma
-# dend[1].connect(soma(1),0)		# '0' end of dend[1] connects to '1' end of soma
-
-# ## DISTAL DENDRITES PART 1 (dend[2] thru dend[7]) ## 
-# for ndend in dist_dends[0:6]:
-# 	ndend.connect(dend[0](1), 0)
-
-# ## DISTAL DENDRITES PART 2 (dend[8] thru dend[13]) ## 
-# for ndend in dist_dends[6:]:
-# 	ndend.connect(dend[1](1), 0)
-
-## SET Ra FOR ALL SECTIONS (SOMA & ALL DENDRITES) ## 
-# for sec in h.allsec():
-# 	sec.Ra = 120 
-
-
-
-
-#############################################
-############# INSERT MECHANISMS #############
-#############################################
-
-# # LEAK CURRENT ##
-# g_Pass = 2.5e-05 
-# # SOMA
-# #cell.soma.insert('Pass')
-# cell.soma.g_Pass = g_Pass 
-# cell.soma.erev_Pass = -72 
-
-# # PROXIMAL DENDRITES
-# #cell.dend.insert('Pass')
-# cell.dend.g_Pass = g_Pass
-# cell.dend.erev_Pass = -7
-
-
-# # # DISTAL DENDRITES 
-# # for dist_dend in dist_dends: 
-# # 	dist_dend.insert('Pass')
-# # 	dist_dend.g_Pass = g_Pass
-# # 	dist_dend.erev_Pass = -72
-
-# ## Adding soma parameters from mechanisms in Erica's Github ##
-# #cell.soma.insert('Cad_int')
-# cell.soma.Cainf_Cad_int = 1e-8
-# cell.soma.k_Cad_int = 0.005
-# cell.soma.taur_Cad_int = 150.0
-
-
-# ##FAST SODIUM 
-# #cell.soma.insert('naf2')
-# cell.soma.gmax_naf2     = 0.1 #0.042
-# cell.soma.mvhalf_naf2   = -40
-# cell.soma.mvalence_naf2 =  5
-# cell.soma.hvhalf_naf2   = -43
-# cell.soma.hvalence_naf2 = -6
-
-
-
-# # POTASSIUM DELAYED RECTIFIER -- ORIGINAL
-# #cell.soma.insert('kdr2orig')
-# cell.soma.ek = -95
-# cell.soma.gmax_kdr2orig     	= 0.1
-# cell.soma.mvhalf_kdr2orig  	= -31
-# cell.soma.mvalence_kdr2orig 	=  3.8
-
-# # IH current
-# #cell.soma.insert('iar')
-# cell.soma.ghbar_iar =  0.7e-04   # 1.3e-4		# 0.13 mS/cm2; correct re: jun.pdf
-# cell.soma.shift_iar = -0.0
-# #h.erev_iar = -44 	# ALREADY THE DEFAULT VALUE IN .mod 
-# #h.stp_iar = 7.4 	# ALREADY THE DEFAULT VALUE IN .mod 
-
-
-# # ICAN current
-# #cell.soma.insert('icanINT')
-# cell.soma.gbar_icanINT = 0.0001 #0.0003
-# h.beta_icanINT = 0.003							# correct re: jun.pdf
-# h.cac_icanINT = 1.1e-04
-# cell.soma.ratc_icanINT = 0.8 #1	 						# low-thresh pool (IT)
-# cell.soma.ratC_icanINT = 0.1 #0.2							# high-thresh pool (IL)
-# h.x_icanINT = 8									# correct re: jun.pdf, if x_ican == "n"
-
-
-# # IAHP current
-# #cell.soma.insert('iahp')
-# cell.soma.gkbar_iahp = 0.45 #0.3
-# h.beta_iahp = 0.02								# correct re: jun.pdf
-# h.cac_iahp = 8e-04
-# cell.soma.ratc_iahp = 0.2 							# low-thresh pool (IT)
-# cell.soma.ratC_iahp = 1 #0.8 							# high-thresh pool (IL)
-# # soma.ek2_iahp = -95 # added from Erica's Github
-
-# # IT current
-# #cell.soma.insert('it2INT')
-# cell.soma.gcabar_it2INT = 0.4e-04  #1.0e-4
-# cell.soma.shift1_it2INT = 7
-# h.shift2_it2INT = 0
-# h.mx_it2INT = 3.0
-# h.hx_it2INT = 1.5
-# h.sm_it2INT = 4.8
-# h.sh_it2INT = 4.6
-
-
-# # CALCIUM PUMP FOR "ca" ION POOL - associated with IT
-# #cell.soma.insert('cad_int')
-# cell.soma.taur_cad_int  = 150
-# cell.soma.taur2_cad_int  = 80
-# cell.soma.cainf_cad_int = 1e-8
-# cell.soma.cainf2_cad_int  = 5.3e-5 #5.2e-5
-# cell.soma.kt_cad_int = 0
-# cell.soma.kt2_cad_int = 0
-# cell.soma.k_cad_int  = 7.5e-3 #5e-3
-# cell.soma.kd_cad_int = 9e-4
-# h.kd2_cad_int = 9e-4
-
-
-# # IL current 
-# #cell.soma.insert('icalINT')
-# cell.soma.pcabar_icalINT = 0.00009 #0.0006
-# h.sh1_icalINT = -10
-# h.sh2_icalINT = 0
-
-
-# # CALCIUM PUMP FOR "Ca" ION POOL -- associated with IL 
-# #cell.soma.insert('Cad_int')
-# cell.soma.taur_Cad_int  = 150
-# cell.soma.taur2_Cad_int = 80
-# cell.soma.Cainf_Cad_int  = 1e-8
-# cell.soma.Cainf2_Cad_int  = 5.2e-5
-# cell.soma.kt_Cad_int = 0
-# cell.soma.kt2_Cad_int = 0
-# cell.soma.k_Cad_int  = 5e-3
-# cell.soma.kd_Cad_int = 9e-4
-# h.kd2_Cad_int = 9e-4
-# h.Cai0_Ca_ion = 5e-5 # added from Erica's Github
-# h.Cao0_Ca_ion = 2 # added from Erica's Github
-
-
-# ### INPUT RESISTANCE VALUES: 
-# # soma.gbar_icanINT = 0.001
-# # soma.ghbar_iar = 2e-3 
-# # soma.gkbar_iahp = 1.4 
-
-
-
-
-# # #############################################
-# # ########### CHANGE ION PARAMETERS ###########
-# # #############################################
-
-# ## ion style 
-# print("h.ion_style('ca_ion')",h.ion_style('ca_ion'))
-# print("h.ion_style('Ca_ion')",h.ion_style('Ca_ion'))
-# h.ion_style('ca_ion',3,2,1,1,0)
-# h.ion_style('Ca_ion',3,2,1,1,0)
-# print("h.ion_style('ca_ion')",h.ion_style('ca_ion'))
-# print("h.ion_style('Ca_ion')",h.ion_style('Ca_ion'))
-
-# # print("h.ion_style('k_ion')",h.ion_style('k_ion'))
-# # print("h.ion_style('k2_ion')",h.ion_style('k2_ion'))
-# # h.ion_style('k_ion',1,3,1,1,1)
-# # h.ion_style('k2_ion',1,3,1,1,1)
-# # print("h.ion_style('k_ion')",h.ion_style('k_ion'))
-# # print("h.ion_style('k2_ion')",h.ion_style('k2_ion'))
-
-# # ###### NEED TO DO THIS ONE WHEN ADDING CALCIUM PUMPS ####### 
-# ## RESET INTERNAL AND EXTERNAL CONCENTRATIONS OF "Ca" ION IN h _ion STRUCT
-# h.Cai0_Ca_ion = 5e-5
-# h.Cao0_Ca_ion = 2
-
-
-# ## RESET INTERNAL AND EXTERNAL CONCENTRATIONS OF "k2" ION IN h _ion STRUCT
-# h.k2i0_k2_ion = 54.5
-# h.k2o0_k2_ion = 2.5 
-
-# h.ki0_k_ion = 54.5
-# h.ko0_k_ion = 2.5 
-
 ## INITIALIZE CHANGES
 h.v_init = -66
 h.finitialize(-66)
-
-
-###################################
-######### STIM OBJECT #########
-##################################
-
-# stim = h.IClamp(soma(0.5))
-# stim.delay = 1000
-# stim.dur = 750 
-# stim.amp = 0.11
-
-###################################
-######### RECORDING #########
-###################################
-
-### TIME
-# t_vec = h.Vector()
-# t_vec.record(h._ref_t)
-
-# ### VOLTAGE
-# v_vec = h.Vector()
-# v_vec.record(soma(0.5)._ref_v)
-
 
 ##################
 ### CURRENTS ###
@@ -390,14 +98,6 @@ iahp_vec.record(cell.soma(0.5)._ref_ik2)
 ##### IONS #####
 ################
 
-# ### SODIUM IONS
-# ena_soma = h.Vector()
-# ena_soma.record(soma(0.5)._ref_ena)
-# nai_soma = h.Vector()
-# nai_soma.record(soma(0.5)._ref_nai)
-# nao_soma = h.Vector()
-# nao_soma.record(soma(0.5)._ref_nao)
-
 ## POTASSIUM IONS FROM KDR2 ('K ion')
 ek_soma = h.Vector()
 ek_soma.record(cell.soma(0.5)._ref_ek)
@@ -414,35 +114,12 @@ k2i_soma.record(cell.soma(0.5)._ref_k2i)
 k2o_soma = h.Vector()
 k2o_soma.record(cell.soma(0.5)._ref_k2o)
 
-# ### CALCIUM EQUILIBRIUM POTENTIALS
-# eca_soma = h.Vector()
-# eca_soma.record(soma(0.5)._ref_eca)
-# eCa_soma = h.Vector()
-# eCa_soma.record(soma(0.5)._ref_eCa)
-
 
 ### CALCIUM INTERNAL CONCENTRATIONS
 cai_soma = h.Vector()
 cai_soma.record(cell.soma(0.5)._ref_cai)
 Cai_soma = h.Vector() 
 Cai_soma.record(cell.soma(0.5)._ref_Cai)
-
-
-# ### CALCIUM EXTERNAL CONCENTRATIONS
-# cao_soma = h.Vector()
-# cao_soma.record(soma(0.5)._ref_cao)
-# Cao_soma = h.Vector() 
-# Cao_soma.record(soma(0.5)._ref_Cao)
-
-
-
-# ## ion style 
-# print("h.ion_style('ca_ion')",h.ion_style('ca_ion'))
-# print("h.ion_style('Ca_ion')",h.ion_style('Ca_ion'))
-# h.ion_style('ca_ion',3,2,1,1,0)
-# h.ion_style('Ca_ion',3,2,1,1,0)
-# print("h.ion_style('ca_ion')",h.ion_style('ca_ion'))
-# print("h.ion_style('Ca_ion')",h.ion_style('Ca_ion'))
 
 
 #####################
@@ -453,6 +130,40 @@ h.finitialize()
 h.celsius = 36
 h.tstop = 2500
 h.run()
+
+print("g_pass after sim: ",cell.soma.g_Pass)
+print("erev_pass after sim: ", cell.soma.erev_Pass)
+print("gmax naf2 after sim: ", cell.soma.gmax_naf2)
+print("gmax_kdr2orig after sim: ", cell.soma.gmax_kdr2orig)
+print("ghbar_iar after sim: ", cell.soma.ghbar_iar)
+print("gbar_icanINT after sim: ", cell.soma.gbar_icanINT)
+print("gkbar_iahp after sim: ", cell.soma.gkbar_iahp)
+print("gcabar_it2INT after sim: ", cell.soma.gcabar_it2INT)
+print("gkbar_iahp after sim: ", cell.soma.gkbar_iahp)
+print("pcabar_icalINT after sim: ", cell.soma.pcabar_icalINT)
+print("Cainf_Cad_int after sim: ", cell.soma.Cainf_Cad_int)
+print("k_Cad_int after sim: ", cell.soma.k_Cad_int)
+print("kd_Cad_int after sim: ", cell.soma.kd_Cad_int)
+print("taur_Cad_int after sim: ", cell.soma.taur_Cad_int)
+print("Cainf_Cad_int after sim: ", cell.soma.Cainf_Cad_int)
+print("kt_Cad_int after sim: ", cell.soma.kt_Cad_int)
+print("kt2_Cad_int after sim: ", cell.soma.kt2_Cad_int)
+print("k_Cad_int after sim: ", cell.soma.k_Cad_int)
+print("kd_Cad_int after sim: ", cell.soma.kd_Cad_int)
+print("taur2_Cad_int after sim: ", cell.soma.taur2_Cad_int)
+print("Cainf2_Cad_int after sim: ", cell.soma.Cainf2_Cad_int)
+print("kt2_Cad_int after sim: ", cell.soma.kt2_Cad_int)
+print("kt_Cad_int after sim: ", cell.soma.kt_Cad_int)
+print("k_Cad_int after sim: ", cell.soma.k_Cad_int)
+print("kd_Cad_int after sim: ", cell.soma.kd_Cad_int)
+print("taur_Cad_int after sim: ", cell.soma.taur_Cad_int)
+print("Cainf_Cad_int after sim: ", cell.soma.Cainf_Cad_int)
+
+with open('TI_reduced_cellParams.json', 'r') as file:
+    data = json.load(file)
+
+for key, value in data.items():
+    print(f"{key}: {value}")
 
 ########### INPUT RESISTANCE 
 print('soma input resistance')

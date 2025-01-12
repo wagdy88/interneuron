@@ -3,32 +3,17 @@ from neuron import h, gui
 import matplotlib.pyplot as plt 
 from matplotlib import rc  # for font rendering (see below)
 from netpyne.support.scalebar import add_scalebar
-from matplotlib.ticker import FormatStrFormatter # for adding units to y axis 
+from matplotlib.ticker import FormatStrFormatter  # for adding units to y axis 
 import numpy as np
 import csv
-import json
+import pandas as pd
+import xlsxwriter
 
 ### USE LATEX FOR FONT RENDERING ###
 rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
 rc('text', usetex=True)
 
 
-###############################
-### ADDING GLOBAL PARAMETERS###
-###############################
-h.Cai0_Ca_ion = 5e-05
-h.Cao0_Ca_ion = 2.0
-h.beta_iahp = 0.02
-h.beta_icanINT = 0.003
-h.cac_iahp = 0.0008
-h.cac_icanINT = 0.00011
-h.kd2_Cad_int = 0.0009
-h.kd2_cad_int = 0.0009
-h.sh1_icalINT = -10.0
-h.sh_it2INT = 4.6
-h.shift2_it2INT = 0.0
-h.sm_it2INT = 4.8
-h.x_icanINT = 8.0
 
 #############################################
 ############## CREATE SECTIONS ##############
@@ -38,6 +23,23 @@ h.x_icanINT = 8.0
 cell = sTI_cell(param_file='TI_reduced_cellParams.json', useJson=True)
 
 # cell = sTI_cell(param_file=None, useJson=False)
+
+###############################
+### ADDING GLOBAL PARAMETERS###
+###############################
+# h.Cai0_Ca_ion = 5e-05
+# h.Cao0_Ca_ion = 2.0
+# h.beta_iahp = 0.02
+# h.beta_icanINT = 0.003
+# h.cac_iahp = 0.0008
+# h.cac_icanINT = 0.00011
+# h.kd2_Cad_int = 0.0009
+# h.kd2_cad_int = 0.0009
+# h.sh1_icalINT = -10.0
+# h.sh_it2INT = 4.6
+# h.shift2_it2INT = 0.0
+# h.sm_it2INT = 4.8
+# h.x_icanINT = 8.0
 
 # Modify the script to use cell.soma and cell.dend
 stim = h.IClamp(cell.soma(0.5))
@@ -52,130 +54,195 @@ t_vec.record(h._ref_t)
 v_vec = h.Vector()
 v_vec.record(cell.soma(0.5)._ref_v)
 
-## INITIALIZE CHANGES
-h.v_init = -66
-h.finitialize(-66)
+# Setting parameter grid search
+g_Pass_values = np.linspace((1.3e-05)/10, (1.3e-05)*10, 5)  # Range for g_Pass
+gmax_naf2_values = np.linspace(0.1/10, 0.1*10, 5)  # Range for gmax_naf2 
+gmax_kdr2orig_values = np.linspace(0.1/10, 0.1*10, 5)
+ghbar_iar_values = np.linspace((7e-05)/10, (7e-05)*10, 5)
+gbar_icanINT_values = np.linspace((9e-05)/10, (9e-05)*10, 5)
+gkbar_iahp_values = np.linspace(0.45/10, 0.45*10, 5)
+gcabar_it2INT_values = np.linspace((4e-05)/10, (4e-05)*10, 5)
+pcabar_icalINT_values = np.linspace((9e-05)/10, (9e-05)*10, 5)
 
-##################
-### CURRENTS ###
-##################
+metadata_results = []
 
-### LEAK CURRENT
-iPass_vec = h.Vector()
-iPass_vec.record(cell.soma(0.5)._ref_i_Pass)
+with pd.ExcelWriter("grid_search_results.xlsx", engine="xlsxwriter") as writer:
+	for g_Pass in g_Pass_values:
+		for gmax_naf2 in gmax_naf2_values:
+			for gmax_kdr2orig in gmax_kdr2orig_values:
+				for ghbar_iar in ghbar_iar_values:
+					for gbar_icanINT in gbar_icanINT_values:
+						for gkbar_iahp in gkbar_iahp_values:
+							for gcabar_it2INT in gcabar_it2INT_values:
+								for pcabar_icalINT in pcabar_icalINT_values:
+									cell.soma.g_Pass = g_Pass
+									cell.soma.gmax_naf2 = gmax_naf2
+									cell.soma.gmax_kdr2orig = gmax_kdr2orig
+									cell.soma.ghbar_iar = ghbar_iar
+									cell.soma.gbar_icanINT = gbar_icanINT
+									cell.soma.gkbar_iahp = gkbar_iahp
+									cell.soma.gcabar_it2INT = gcabar_it2INT
+									cell.soma.pcabar_icalINT = pcabar_icalINT
 
-### FAST SODIUM CURRENT
-ina_vec = h.Vector()
-ina_vec.record(cell.soma(0.5)._ref_ina)
+									# Initialize and run simulation
+									h.v_init = -66
+									h.finitialize(-66)
+									h.celsius = 36
+									h.tstop = 2500
+									h.run()
 
+									##################
+									### CURRENTS ###
+									##################
 
-### K+ DELAYED RECTIFIER CURRENT
-ik_vec = h.Vector()
-ik_vec.record(cell.soma(0.5)._ref_ik)
+									### LEAK CURRENT
+									iPass_vec = h.Vector()
+									iPass_vec.record(cell.soma(0.5)._ref_i_Pass)
 
-### IH CURRENT
-ih_vec = h.Vector()
-ih_vec.record(cell.soma(0.5)._ref_iother)
-
-# IT CURRENT -- technically "ca" current
-ica_vec_IT = h.Vector()
-ica_vec_IT.record(cell.soma(0.5)._ref_ica)
-
-# IL CURRENT -- technically "Ca" current
-iCa_vec_IL = h.Vector()
-iCa_vec_IL.record(cell.soma(0.5)._ref_iCa)
-
-# ICAN CURRENT
-ican_vec = h.Vector()
-ican_vec.record(cell.soma(0.5)._ref_iother2)
-
-# IAHP CURRENT
-iahp_vec = h.Vector()
-iahp_vec.record(cell.soma(0.5)._ref_ik2)
-
-
-################
-##### IONS #####
-################
-
-## POTASSIUM IONS FROM KDR2 ('K ion')
-ek_soma = h.Vector()
-ek_soma.record(cell.soma(0.5)._ref_ek)
-ki_soma = h.Vector()
-ki_soma.record(cell.soma(0.5)._ref_ki)
-ko_soma = h.Vector()
-ko_soma.record(cell.soma(0.5)._ref_ko)
-
-### K2 POTASSIUM IONS FROM IAHP ('K2 ion')
-ek2_soma = h.Vector()
-ek2_soma.record(cell.soma(0.5)._ref_ek2)
-k2i_soma = h.Vector()
-k2i_soma.record(cell.soma(0.5)._ref_k2i)
-k2o_soma = h.Vector()
-k2o_soma.record(cell.soma(0.5)._ref_k2o)
+									### FAST SODIUM CURRENT
+									ina_vec = h.Vector()
+									ina_vec.record(cell.soma(0.5)._ref_ina)
 
 
-### CALCIUM INTERNAL CONCENTRATIONS
-cai_soma = h.Vector()
-cai_soma.record(cell.soma(0.5)._ref_cai)
-Cai_soma = h.Vector() 
-Cai_soma.record(cell.soma(0.5)._ref_Cai)
+									### K+ DELAYED RECTIFIER CURRENT
+									ik_vec = h.Vector()
+									ik_vec.record(cell.soma(0.5)._ref_ik)
+
+									### IH CURRENT
+									ih_vec = h.Vector()
+									ih_vec.record(cell.soma(0.5)._ref_iother)
+
+									# IT CURRENT -- technically "ca" current
+									ica_vec_IT = h.Vector()
+									ica_vec_IT.record(cell.soma(0.5)._ref_ica)
+
+									# IL CURRENT -- technically "Ca" current
+									iCa_vec_IL = h.Vector()
+									iCa_vec_IL.record(cell.soma(0.5)._ref_iCa)
+
+									# ICAN CURRENT
+									ican_vec = h.Vector()
+									ican_vec.record(cell.soma(0.5)._ref_iother2)
+
+									# IAHP CURRENT
+									iahp_vec = h.Vector()
+									iahp_vec.record(cell.soma(0.5)._ref_ik2)
 
 
-#####################
-######## RUN ########
-#####################
-h.finitialize()
+									################
+									##### IONS #####
+									################
 
-h.celsius = 36
-h.tstop = 2500
-h.run()
+									## POTASSIUM IONS FROM KDR2 ('K ion')
+									ek_soma = h.Vector()
+									ek_soma.record(cell.soma(0.5)._ref_ek)
+									ki_soma = h.Vector()
+									ki_soma.record(cell.soma(0.5)._ref_ki)
+									ko_soma = h.Vector()
+									ko_soma.record(cell.soma(0.5)._ref_ko)
 
-print("g_pass after sim: ",cell.soma.g_Pass)
-print("erev_pass after sim: ", cell.soma.erev_Pass)
-print("gmax naf2 after sim: ", cell.soma.gmax_naf2)
-print("gmax_kdr2orig after sim: ", cell.soma.gmax_kdr2orig)
-print("ghbar_iar after sim: ", cell.soma.ghbar_iar)
-print("gbar_icanINT after sim: ", cell.soma.gbar_icanINT)
-print("gkbar_iahp after sim: ", cell.soma.gkbar_iahp)
-print("gcabar_it2INT after sim: ", cell.soma.gcabar_it2INT)
-print("gkbar_iahp after sim: ", cell.soma.gkbar_iahp)
-print("pcabar_icalINT after sim: ", cell.soma.pcabar_icalINT)
-print("Cainf_Cad_int after sim: ", cell.soma.Cainf_Cad_int)
-print("k_Cad_int after sim: ", cell.soma.k_Cad_int)
-print("kd_Cad_int after sim: ", cell.soma.kd_Cad_int)
-print("taur_Cad_int after sim: ", cell.soma.taur_Cad_int)
-print("Cainf_Cad_int after sim: ", cell.soma.Cainf_Cad_int)
-print("kt_Cad_int after sim: ", cell.soma.kt_Cad_int)
-print("kt2_Cad_int after sim: ", cell.soma.kt2_Cad_int)
-print("k_Cad_int after sim: ", cell.soma.k_Cad_int)
-print("kd_Cad_int after sim: ", cell.soma.kd_Cad_int)
-print("taur2_Cad_int after sim: ", cell.soma.taur2_Cad_int)
-print("Cainf2_Cad_int after sim: ", cell.soma.Cainf2_Cad_int)
-print("kt2_Cad_int after sim: ", cell.soma.kt2_Cad_int)
-print("kt_Cad_int after sim: ", cell.soma.kt_Cad_int)
-print("k_Cad_int after sim: ", cell.soma.k_Cad_int)
-print("kd_Cad_int after sim: ", cell.soma.kd_Cad_int)
-print("taur_Cad_int after sim: ", cell.soma.taur_Cad_int)
-print("Cainf_Cad_int after sim: ", cell.soma.Cainf_Cad_int)
+									### K2 POTASSIUM IONS FROM IAHP ('K2 ion')
+									ek2_soma = h.Vector()
+									ek2_soma.record(cell.soma(0.5)._ref_ek2)
+									k2i_soma = h.Vector()
+									k2i_soma.record(cell.soma(0.5)._ref_k2i)
+									k2o_soma = h.Vector()
+									k2o_soma.record(cell.soma(0.5)._ref_k2o)
 
-with open('TI_reduced_cellParams.json', 'r') as file:
-    data = json.load(file)
 
-for key, value in data.items():
-    print(f"{key}: {value}")
+									### CALCIUM INTERNAL CONCENTRATIONS
+									cai_soma = h.Vector()
+									cai_soma.record(cell.soma(0.5)._ref_cai)
+									Cai_soma = h.Vector() 
+									Cai_soma.record(cell.soma(0.5)._ref_Cai)
+
+
+									#####################
+									######## RUN ########
+									#####################
+									h.finitialize()
+
+									h.celsius = 36
+									h.tstop = 2500
+									h.run()
+
+									# # Save parameters to csv
+									# with open("fullCurrents_TwoComp_Json_params.csv", "w", newline="") as f:
+									# 	writer = csv.writer(f)
+									# 	writer.writerow(["Parameter", "Value"])
+									# 	writer.writerow(["g_Pass", g_Pass])
+									# 	writer.writerow(["gmax_naf2", gmax_naf2])
+									# 	writer.writerow(["gmax_kdr2orig", gmax_kdr2orig])
+									# 	writer.writerow(["ghbar_iar", ghbar_iar])
+									# 	writer.writerow(["gbar_icanINT", gbar_icanINT])
+									# 	writer.writerow(["gkbar_iahp", gkbar_iahp])
+									# 	writer.writerow(["gcabar_it2INT", gcabar_it2INT])
+									# 	writer.writerow(["pcabar_icalINT", pcabar_icalINT])
+									# Save results for this parameter set
+									SomaProxDend_sheets = pd.DataFrame({
+											"Time (ms)": list(t_vec),
+											"Voltage (mV)": list(v_vec)
+										})
+									# Create unique sheet name
+									results_sheet_name = f"Sheet_{len(metadata_results) + 1}"
+
+									# Add metadata entry
+									metadata_results.append({
+											"Sheet Name": results_sheet_name,
+											"g_Pass": g_Pass,
+											"gmax_naf2": gmax_naf2,
+											"gmax_kdr2orig": gmax_kdr2orig,
+											"ghbar_iar": ghbar_iar,
+											"gbar_icanINT": gbar_icanINT,
+											"gkbar_iahp": gkbar_iahp,
+											"gcabar_it2INT": gcabar_it2INT,
+											"pcabar_icalINT": pcabar_icalINT
+										})
+
+# Save metadata as a separate sheet
+metadata_df = pd.DataFrame(metadata_results)
+metadata_df.to_excel(writer, sheet_name="Metadata", index=False)
+
+print("Grid search results and metadata saved to grid_search_results.xlsx")
+
+
+# print("g_pass after sim: ",cell.soma.g_Pass)
+# print("erev_pass after sim: ", cell.soma.erev_Pass)
+# print("gmax naf2 after sim: ", cell.soma.gmax_naf2)
+# print("gmax_kdr2orig after sim: ", cell.soma.gmax_kdr2orig)
+# print("ghbar_iar after sim: ", cell.soma.ghbar_iar)
+# print("gbar_icanINT after sim: ", cell.soma.gbar_icanINT)
+# print("gkbar_iahp after sim: ", cell.soma.gkbar_iahp)
+# print("gcabar_it2INT after sim: ", cell.soma.gcabar_it2INT)
+# print("gkbar_iahp after sim: ", cell.soma.gkbar_iahp)
+# print("pcabar_icalINT after sim: ", cell.soma.pcabar_icalINT)
+# print("Cainf_Cad_int after sim: ", cell.soma.Cainf_Cad_int)
+# print("k_Cad_int after sim: ", cell.soma.k_Cad_int)
+# print("kd_Cad_int after sim: ", cell.soma.kd_Cad_int)
+# print("taur_Cad_int after sim: ", cell.soma.taur_Cad_int)
+# print("Cainf_Cad_int after sim: ", cell.soma.Cainf_Cad_int)
+# print("kt_Cad_int after sim: ", cell.soma.kt_Cad_int)
+# print("kt2_Cad_int after sim: ", cell.soma.kt2_Cad_int)
+# print("k_Cad_int after sim: ", cell.soma.k_Cad_int)
+# print("kd_Cad_int after sim: ", cell.soma.kd_Cad_int)
+# print("taur2_Cad_int after sim: ", cell.soma.taur2_Cad_int)
+# print("Cainf2_Cad_int after sim: ", cell.soma.Cainf2_Cad_int)
+# print("kt2_Cad_int after sim: ", cell.soma.kt2_Cad_int)
+# print("kt_Cad_int after sim: ", cell.soma.kt_Cad_int)
+# print("k_Cad_int after sim: ", cell.soma.k_Cad_int)
+# print("kd_Cad_int after sim: ", cell.soma.kd_Cad_int)
+# print("taur_Cad_int after sim: ", cell.soma.taur_Cad_int)
+# print("Cainf_Cad_int after sim: ", cell.soma.Cainf_Cad_int)
+
+# with open('TI_reduced_cellParams.json', 'r') as file:
+#     data = json.load(file)
+
+# for key, value in data.items():
+#     print(f"{key}: {value}")
 
 ########### INPUT RESISTANCE 
 print('soma input resistance')
 print(cell.soma(0.5).ri())
-
-# After simulation ends, save data to CSV
-with open("fullCurrents_TwoComp_Json_data.csv", "w", newline="") as f:
-    writer = csv.writer(f)
-    writer.writerow(["Time (ms)", "Soma Voltage (mV)"])
-    for t, v in zip(t_vec, v_vec):
-        writer.writerow([t, v])
-
 
 
 ##############################
@@ -211,126 +278,125 @@ if allCurrents:
 
 
 	# ENTER WHICH CURRENTS TO PLOT 
-	### vecsToPlot = ['voltage', 'IAHP', 'ICAN', 'IH', 'leak', 'INaf', 'IL', 'Ca', 'IT', 'ca']
-# 	vecsToPlot = ['voltage', 'IT', 'ca', 'ICAN', 'INaf', 'IL', 'Ca', 'IAHP']
+	## vecsToPlot = ['voltage', 'IAHP', 'ICAN', 'IH', 'leak', 'INaf', 'IL', 'Ca', 'IT', 'ca']
+	vecsToPlot = ['voltage', 'IT', 'ca', 'ICAN', 'INaf', 'IL', 'Ca', 'IAHP']
 
 
 # 	# SLICE TIME VEC IF NECESSARY
-# 	t_vec = list(t_vec)
-# 	t_vec_allCurrents = t_vec[25000:] # USE SAME IN LOOP BELOW 
+	t_vec = list(t_vec)
+	t_vec_allCurrents = t_vec[25000:] # USE SAME IN LOOP BELOW 
 
-# 	time_points = [500, 1000]
+	time_points = [500, 1000]
 
 # 	# CREATE SUBPLOTS 
-# 	fig,ax = plt.subplots(nrows = len(vecsToPlot), ncols = 1, sharex=True)
+	fig,ax = plt.subplots(nrows = len(vecsToPlot), ncols = 1, sharex=True)
 
 # 	### WITH SCALEBAR
-# 	scalebar = 0 
+	scalebar = 0 
 
-# 	if scalebar:
-# 		for i,vec in enumerate(vecsToPlot):
-# 			vecToPlot = vecInfo[vec]['vec']
-# 			vecToPlot = list(vecToPlot)
-# 			vecToPlot = vecToPlot[25000:]
-# 			if vec == 'voltage':
-# 				add_scalebar(ax[i],hidey=False,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='mV',barcolor=vecInfo[vec]['color'],loc=4) 
+	if scalebar:
+		for i,vec in enumerate(vecsToPlot):
+			vecToPlot = vecInfo[vec]['vec']
+			vecToPlot = list(vecToPlot)
+			vecToPlot = vecToPlot[25000:]
+			if vec == 'voltage':
+				add_scalebar(ax[i],hidey=False,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='mV',barcolor=vecInfo[vec]['color'],loc=4) 
 
-# 			elif vec in ['leak', 'INaf', 'IKdr', 'IH', 'IT', 'IL', 'IAHP', 'ICAN']:
-# 				vecToPlotScaled = [i * 1000 for i in vecToPlot] 
-# 				vecToPlot = vecToPlotScaled
-# 				if vec == 'IAHP':
-# 					add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='pA',barcolor=vecInfo[vec]['color'],loc=4) 
-# 				else:
-# 					add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='pA',barcolor=vecInfo[vec]['color'],loc=1)
+			elif vec in ['leak', 'INaf', 'IKdr', 'IH', 'IT', 'IL', 'IAHP', 'ICAN']:
+				vecToPlotScaled = [i * 1000 for i in vecToPlot] 
+				vecToPlot = vecToPlotScaled
+				if vec == 'IAHP':
+					add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='pA',barcolor=vecInfo[vec]['color'],loc=4) 
+				else:
+					add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='pA',barcolor=vecInfo[vec]['color'],loc=1)
 
-# 			elif vec in ['ca', 'Ca']:
-# 				vecToPlotScaled = [i * 1000000 for i in vecToPlot]
-# 				vecToPlot = vecToPlotScaled
-# 				add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='nM',barcolor=vecInfo[vec]['color'],loc=4)
+			elif vec in ['ca', 'Ca']:
+				vecToPlotScaled = [i * 1000000 for i in vecToPlot]
+				vecToPlot = vecToPlotScaled
+				add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='nM',barcolor=vecInfo[vec]['color'],loc=4)
 
 
-# 			ax[i].plot(t_vec_allCurrents,vecToPlot, color=vecInfo[vec]['color'],label=vecInfo[vec]['label'])
-# 			ax[i].set_title(vecInfo[vec]['label'], x=0.1,y=0.25, color=vecInfo[vec]['color']) 
+			ax[i].plot(t_vec_allCurrents,vecToPlot, color=vecInfo[vec]['color'],label=vecInfo[vec]['label'])
+			ax[i].set_title(vecInfo[vec]['label'], x=0.1,y=0.25, color=vecInfo[vec]['color']) 
 
 
 # 	### WITH AXES & SCALEBAR FOR VOLTAGE <-- USE THIS AS DEFAULT OPTION!! 
-# 	else:
-# 		for i,vec in enumerate(vecsToPlot):
-# 			vecToPlot = vecInfo[vec]['vec']
-# 			vecToPlot = list(vecToPlot)
-# 			vecToPlot = vecToPlot[25000:]
+	else:
+		for i,vec in enumerate(vecsToPlot):
+			vecToPlot = vecInfo[vec]['vec']
+			vecToPlot = list(vecToPlot)
+			vecToPlot = vecToPlot[25000:]
 
 
-# 			if vec == 'voltage':
-# 				formatter = FormatStrFormatter('%d mV')
-# 				add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='mV',barcolor=vecInfo[vec]['color'],loc=4) 
+			if vec == 'voltage':
+				formatter = FormatStrFormatter('%d mV')
+				add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='mV',barcolor=vecInfo[vec]['color'],loc=4) 
 
 
-# 			elif vec in ['leak', 'INaf', 'IKdr', 'IH', 'IT', 'IL', 'IAHP', 'ICAN']:
-# 				vecToPlotScaled = [i * 1000 for i in vecToPlot] 
-# 				vecToPlot = vecToPlotScaled
-# 				formatter = FormatStrFormatter('%d pA')
-# 				ytickmin = vecInfo[vec]['ytickmin']
-# 				ytickmax = vecInfo[vec]['ytickmax']
-# 				ax[i].spines['right'].set_bounds(ytickmin, ytickmax) # set y axis label bounds 
-# 				yticks = np.linspace(ytickmin, ytickmax, 2)
-# 				ax[i].set_yticks(yticks)
+			elif vec in ['leak', 'INaf', 'IKdr', 'IH', 'IT', 'IL', 'IAHP', 'ICAN']:
+				vecToPlotScaled = [i * 1000 for i in vecToPlot] 
+				vecToPlot = vecToPlotScaled
+				formatter = FormatStrFormatter('%d pA')
+				ytickmin = vecInfo[vec]['ytickmin']
+				ytickmax = vecInfo[vec]['ytickmax']
+				ax[i].spines['right'].set_bounds(ytickmin, ytickmax) # set y axis label bounds 
+				yticks = np.linspace(ytickmin, ytickmax, 2)
+				ax[i].set_yticks(yticks)
 
-# 			elif vec in ['ca', 'Ca']:
-# 				vecToPlotScaled = [i * 1000000 for i in vecToPlot]
-# 				vecToPlot = vecToPlotScaled
-# 				formatter = FormatStrFormatter('%d nM')
-# 				ytickmin = vecInfo[vec]['ytickmin']
-# 				ytickmax = vecInfo[vec]['ytickmax']
-# 				ax[i].spines['right'].set_bounds(ytickmin, ytickmax) # set y axis label bounds 
-# 				yticks = np.linspace(ytickmin, ytickmax, 2)
-# 				ax[i].set_yticks(yticks)
+			elif vec in ['ca', 'Ca']:
+				vecToPlotScaled = [i * 1000000 for i in vecToPlot]
+				vecToPlot = vecToPlotScaled
+				formatter = FormatStrFormatter('%d nM')
+				ytickmin = vecInfo[vec]['ytickmin']
+				ytickmax = vecInfo[vec]['ytickmax']
+				ax[i].spines['right'].set_bounds(ytickmin, ytickmax) # set y axis label bounds 
+				yticks = np.linspace(ytickmin, ytickmax, 2)
+				ax[i].set_yticks(yticks)
 
 # 			# set units next to y axis ticks
-# 			ax[i].yaxis.set_major_formatter(formatter)
+			ax[i].yaxis.set_major_formatter(formatter)
 
 # 			# set all spines invisible except the right 
-# 			ax[i].spines['bottom'].set_visible(False)
-# 			ax[i].spines['top'].set_visible(False)
-# 			ax[i].spines['left'].set_visible(False)
-# 			ax[i].spines['right'].set_visible(True)
+			ax[i].spines['bottom'].set_visible(False)
+			ax[i].spines['top'].set_visible(False)
+			ax[i].spines['left'].set_visible(False)
+			ax[i].spines['right'].set_visible(True)
 
 # 			# set color of right spine
-# 			ax[i].spines['right'].set_color(vecInfo[vec]['color'])
+			ax[i].spines['right'].set_color(vecInfo[vec]['color'])
 
 # 			# remove ticks on x axis 
-# 			for tic in ax[i].xaxis.get_major_ticks():
-# 				tic.tick1On = tic.tick2On = False
-# 				tic.label1On = tic.label2On = False
+			for tic in ax[i].xaxis.get_major_ticks():
+				tic.tick1On = tic.tick2On = False
+				tic.label1On = tic.label2On = False
 
 # 			# only label the tickmarks on the right spine 
-# 			ax[i].yaxis.set_ticks_position('right')
+			ax[i].yaxis.set_ticks_position('right')
 
 # 			# set color of y ticks 
-# 			ax[i].tick_params(axis='y',colors=vecInfo[vec]['color'])
+			ax[i].tick_params(axis='y',colors=vecInfo[vec]['color'])
 
 
 # 			# PLOT 
-# 			ax[i].plot(t_vec_allCurrents,vecToPlot, color=vecInfo[vec]['color'],label=vecInfo[vec]['label'])
+			ax[i].plot(t_vec_allCurrents,vecToPlot, color=vecInfo[vec]['color'],label=vecInfo[vec]['label'])
 
-# 			ax[i].set_ylabel(vecInfo[vec]['label'])
+			ax[i].set_ylabel(vecInfo[vec]['label'])
 
-# 			ax[i].set_title(vecInfo[vec]['label'], x=0.1,y=0.25, color=vecInfo[vec]['color']) 
+			ax[i].set_title(vecInfo[vec]['label'], x=0.1,y=0.25, color=vecInfo[vec]['color']) 
 
-# 			# ADDING VERTICAL TIME BARS
-# 			for time_point in time_points:
-# 				ax[i].axvline(x=time_point, color='gray', linestyle='--', linewidth=1)
+# ADDING VERTICAL TIME BARS
+			for time_point in time_points:
+ 				ax[i].axvline(x=time_point, color='gray', linestyle='--', linewidth=1)
+# ADDING LABEL FOR X-AXIS ON LAST PLOT 
+#				ax[-1].set_xlabel('Time (ms)')
 
-# 			# ADDING LABEL FOR X-AXIS ON LAST PLOT
-# 			ax[-1].set_xlabel('Time (ms)')
-
-# 	plt.show()
+plt.show()
 
 
 # if fancyVoltage:
-# 	### FANCIER VOLTAGE PLOTTING 
-# 	t_vec = list(t_vec)
-# 	v_vec = list(v_vec)
+# # 	### FANCIER VOLTAGE PLOTTING 
+#  	t_vec = list(t_vec)
+#  	v_vec = list(v_vec)
 
 # 	plt.figure(figsize=(6,3))
 # 	ax = plt.gca()

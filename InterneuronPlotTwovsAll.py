@@ -10,6 +10,7 @@ import numpy as np
 from matplotlib import rc  # for font rendering (see below)
 import matplotlib.pyplot as plt
 import csv
+import pandas as pd
 
 # Load data from fullCurrents
 time_full = []

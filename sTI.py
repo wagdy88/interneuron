@@ -24,10 +24,15 @@ class sTI_cell:
             # Load parameters from JSON file
             with open(param_file, 'r') as f:
                 self.params = json.load(f)
-            print("Loaded JSON parameters: ", self.param_file)
+                # Apply JSON parameters to the mechanisms
+                for mech, props in self.params['secs']['soma']['mechs'].items():
+                    self.soma.insert(mech)  # Insert the mechanism (e.g., 'naf2')
+                    for key, value in props.items():
+                        setattr(self.soma, f"{key}_{mech}", value)  # Assign parameters
         else:
             # Use default parameters from fullCurrents.py
             self.params = self.default_params()
+
         self.initsoma()
         self.initdend()
 
@@ -70,9 +75,6 @@ class sTI_cell:
         self.soma.insert('iar')
         self.soma.ghbar_iar = 1.3e-4		# 0.13 mS/cm2; correct re: jun.pdf
         self.soma.shift_iar = -0.0
-        #h.erev_iar = -44 	# ALREADY THE DEFAULT VALUE IN .mod 
-        #h.stp_iar = 7.4 	# ALREADY THE DEFAULT VALUE IN .mod 
-
 
         # ICAN current
         self.soma.insert('icanINT')
@@ -83,7 +85,6 @@ class sTI_cell:
         self.soma.ratC_icanINT = 0.2							# high-thresh pool (IL)
         h.x_icanINT = 8									# correct re: jun.pdf, if x_ican == "n"
 
-
         # IAHP current
         self.soma.insert('iahp')
         self.soma.gkbar_iahp = 0.3
@@ -91,7 +92,6 @@ class sTI_cell:
         h.cac_iahp = 8e-04
         self.soma.ratc_iahp = 0.2 							# low-thresh pool (IT)
         self.soma.ratC_iahp = 0.8 							# high-thresh pool (IL)
-
 
         # IT current
         self.soma.insert('it2INT')
@@ -102,7 +102,6 @@ class sTI_cell:
         h.hx_it2INT = 1.5
         h.sm_it2INT = 4.8
         h.sh_it2INT = 4.6
-
 
         # CALCIUM PUMP FOR "ca" ION POOL - associated with IT
         self.soma.insert('cad_int')
@@ -116,13 +115,11 @@ class sTI_cell:
         self.soma.kd_cad_int = 9e-4
         h.kd2_cad_int = 9e-4
 
-
         # IL current 
         self.soma.insert('icalINT')
         self.soma.pcabar_icalINT = 0.0006
         h.sh1_icalINT = -10
         h.sh2_icalINT = 0
-
 
         # CALCIUM PUMP FOR "Ca" ION POOL -- associated with IL 
         self.soma.insert('Cad_int')
@@ -137,15 +134,6 @@ class sTI_cell:
         h.kd2_Cad_int = 9e-4
 
 
-
-        ### INPUT RESISTANCE VALUES: 
-        # soma.gbar_icanINT = 0.001
-        # soma.ghbar_iar = 2e-3 
-        # soma.gkbar_iahp = 1.4 
-
-
-
-
         # #############################################
         # ########### CHANGE ION PARAMETERS ###########
         # #############################################
@@ -157,13 +145,6 @@ class sTI_cell:
         h.ion_style('Ca_ion',3,2,1,1,0)
         print("h.ion_style('ca_ion')",h.ion_style('ca_ion'))
         print("h.ion_style('Ca_ion')",h.ion_style('Ca_ion'))
-
-        # print("h.ion_style('k_ion')",h.ion_style('k_ion'))
-        # print("h.ion_style('k2_ion')",h.ion_style('k2_ion'))
-        # h.ion_style('k_ion',1,3,1,1,1)
-        # h.ion_style('k2_ion',1,3,1,1,1)
-        # print("h.ion_style('k_ion')",h.ion_style('k_ion'))
-        # print("h.ion_style('k2_ion')",h.ion_style('k2_ion'))
 
         ####### NEED TO DO THIS ONE WHEN ADDING CALCIUM PUMPS ####### 
         ## RESET INTERNAL AND EXTERNAL CONCENTRATIONS OF "Ca" ION IN h _ion STRUCT
@@ -184,85 +165,28 @@ class sTI_cell:
         soma.diam = 10
         soma.L = 16
         soma.cm = 1
+
+        ## Inserting mechanisms
         # ## Passive current
         soma.insert('Pass') #ntleak.mod
-        # soma.g_Pass = 2e-06
-        # soma.erev_Pass = -74
         # ## Fast sodium 
         soma.insert('naf2')
-        # # soma.gmax_naf2     = 0.1
-        # soma.gmax_naf2     = 0.02 # fixd the amplitude of spikes vs. full model
-        # soma.mvhalf_naf2   = -40
-        # soma.mvalence_naf2 =  5
-        # soma.hvhalf_naf2   = -43
-        # soma.hvalence_naf2 = -6
         # ## DELAYED RECTIFIER POTASSIUM 
         soma.insert('kdr2orig')
-        # soma.ek = -95
-        # soma.gmax_kdr2orig      = 0.1
-        # soma.mvhalf_kdr2orig    = -31
-        # soma.mvalence_kdr2orig  =  3.8
         # ## H CURRENT 
         soma.insert('iar')
-        # soma.ghbar_iar = 0.7e-04
-        # soma.shift_iar = -0.0
         # ## ICAN current 
         soma.insert('icanINT')
-        # soma.gbar_icanINT =  0.0001
-        # h.beta_icanINT = 0.003
-        # h.cac_icanINT = 1.1e-04
-        # soma.ratc_icanINT = 0.8           # proportion coming from low-thresh pool (IT)
-        # soma.ratC_icanINT = 0.1           # proportion coming from high-thresh pool (IL)
-        # h.x_icanINT = 8                   # correct re: jun.pdf, if x_ican == "n"
         # ## IAHP current 
         soma.insert('iahp')
-        # # soma.gkbar_iahp = 0.45
-        # soma.gkbar_iahp = 0.9 # better interspike interval close to full model
-        # h.beta_iahp = 0.02      # correct re: jun.pdf
-        # h.cac_iahp = 8e-04
-        # soma.ratc_iahp = 0.2   
-        # soma.ratC_iahp = 1 
-        # soma.ek2 = -95 
         # ## IT current (low-thresh calcium pool)
         soma.insert('it2INT')
-        # # soma.gcabar_it2INT = 0.4e-04
-        # soma.gcabar_it2INT = 0.4e-04 *5
-        # soma.shift1_it2INT = 7    # correct re: jun.pdf
-        # h.shift2_it2INT = 0       # correct re: jun.pdf # h used bc GLOBAL var in ntt.mod
-        # h.mx_it2INT = 3.0         # correct re: jun.pdf # h used bc GLOBAL var in ntt.mod
-        # h.hx_it2INT = 1.5         # correct re: jun.pdf # h used bc GLOBAL var in ntt.mod
-        # h.sm_it2INT = 4.8         # correct re: jun.pdf # h used bc GLOBAL var in ntt.mod
-        # h.sh_it2INT = 4.6         # correct re: jun.pdf # h used bc GLOBAL var in ntt.mod
         # # low-thresh calcium pool pump 
         soma.insert('cad_int')
-        # soma.taur_cad_int  = 150              # ORIG: 150 
-        # soma.taur2_cad_int  = 80              # ORIG: 80 
-        # soma.cainf_cad_int  = 1e-8            # ORIG: 1e-8 
-        # soma.cainf2_cad_int  = 5.3e-5         # ORIG: 5.2e-5
-        # soma.kt_cad_int = 0                   # ORIG: 0e-6 # <-- should be 0 from thesis 
-        # soma.kt2_cad_int = 0                  # ORIG: 0e-7 # <-- should be 0 from thesis 
-        # soma.k_cad_int  = 7.5e-3 
-        # soma.kd_cad_int = 9e-4                  # doesn't matter if kt is 0
-        # h.kd2_cad_int = 9e-4                    # doesn't matter if kt2 is 0
         # ## IL current (high-thresh calcium pool)
         soma.insert('icalINT')
-        # # soma.pcabar_icalINT = 0.00009
-        # soma.pcabar_icalINT = 0.00009 * 5
-        # h.sh1_icalINT = -10
-        # h.sh2_icalINT = 0
         # ## High-thresh calcium pool pump 
         soma.insert('Cad_int')
-        # soma.taur_Cad_int  = 150 
-        # soma.taur2_Cad_int  = 80
-        # soma.Cainf_Cad_int  = 1e-8
-        # soma.Cainf2_Cad_int  = 5.2e-5
-        # soma.kt_Cad_int = 0
-        # soma.kt2_Cad_int = 0
-        # soma.k_Cad_int  = 5e-3
-        # soma.kd_Cad_int = 9e-4 
-        # h.kd2_Cad_int = 9e-4
-        # h.Cai0_Ca_ion = 5e-5
-        # h.Cao0_Ca_ion = 2
 
     def initdend(self):
         dend = self.dend
@@ -272,8 +196,6 @@ class sTI_cell:
         dend.cm = 1
         # ## Passive current
         dend.insert('Pass')
-        # dend.g_Pass = 13e-06
-        # dend.erev_Pass = -74
 
 
 

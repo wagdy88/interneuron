@@ -55,7 +55,7 @@ def main():
 	v_vec.record(cell.soma(0.5)._ref_v)
 
 	# Setting parameter grid search
-	g_Pass_values = np.linspace((1.3e-05)/10, (1.3e-05)*10, 34)  # Range for g_Pass
+	g_Pass_values = np.linspace((1.3e-05)/10, (1.3e-05)*10, 3)  # Range for g_Pass
 	gmax_naf2_values = np.linspace(0.1/10, 0.1*10, 3)  # Range for gmax_naf2 
 	gmax_kdr2orig_values = np.linspace(0.1/10, 0.1*10, 5)
 	ghbar_iar_values = np.linspace((7e-05)/10, (7e-05)*10, 5)

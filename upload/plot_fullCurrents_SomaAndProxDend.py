@@ -1,374 +1,231 @@
+from sTI import sTI_cell
 from neuron import h, gui
 import matplotlib.pyplot as plt 
 from matplotlib import rc  # for font rendering (see below)
 from netpyne.support.scalebar import add_scalebar
-from matplotlib.ticker import FormatStrFormatter # for adding units to y axis 
+from matplotlib.ticker import FormatStrFormatter  # for adding units to y axis 
 import numpy as np
-import csv
-plt.ion()
+import pandas as pd
+import h5py
+from mpi4py import MPI
+import os 
+
 
 def main():
+	# First codes to run before using ipython
+	# module avail mpi
+	# module load mpi/mpich-x86_64
 
 	### USE LATEX FOR FONT RENDERING ###
 	rc('font', **{'family': 'serif', 'serif': ['Computer Modern']})
 	rc('text', usetex=True)
 
+	# MPI setup
+	comm = MPI.COMM_WORLD
+	rank = comm.Get_rank()
+	size = comm.Get_size()
+
+	# Create a results folder
+	os.makedirs("simulation_results", exist_ok=True)
+
+	if rank == 0:  # Single-core operation for generating HDF5
+		print("Running grid search on one core...")
 
 	#############################################
 	############## CREATE SECTIONS ##############
 	#############################################
 
-	######## CREATE SOMA ######## 
-	soma = h.Section(name='soma')
-	soma.nseg = 1
-	soma.diam = 10
-	soma.L = 16
-	soma.cm = 1
+	# Instantiate cell and replace previous soma/dend setup
+	cell = sTI_cell(param_file='TI_reduced_cellParams.json', useJson=True)
+
+	# cell = sTI_cell(param_file=None, useJson=False)
 
 
-	################## CREATE DENDRITES #################### 
-	dend = [h.Section(name='dend[%d]' % i) for i in range(14)]
-
-	### PROXIMAL DENDRITES ### 
-	prox_dends = dend[0:2]
-
-	for prox_dend in prox_dends:
-		prox_dend.nseg = 1
-		prox_dend.diam = 3.25
-		prox_dend.L = 240
-		prox_dend.cm = 1
-
-	#### DISTAL DENDRITES ####
-	dist_dends = dend[2:]
-
-	for dist_dend in dist_dends: 
-		dist_dend.nseg = 1
-		dist_dend.diam = 1.75
-		dist_dend.L = 180
-		dist_dend.cm = 1
-
-
-	#### CONNECT SECTIONS #####
-	## PROXIMAL DENDRITES ## 
-	dend[0].connect(soma(0),0) 		# '0' end of dend[0] connects to '0' end of soma
-	dend[1].connect(soma(1),0)		# '0' end of dend[1] connects to '1' end of soma
-
-	## DISTAL DENDRITES PART 1 (dend[2] thru dend[7]) ## 
-	for ndend in dist_dends[0:6]:
-		ndend.connect(dend[0](1), 0)
-
-	## DISTAL DENDRITES PART 2 (dend[8] thru dend[13]) ## 
-	for ndend in dist_dends[6:]:
-		ndend.connect(dend[1](1), 0)
-
-	## SET Ra FOR ALL SECTIONS (SOMA & ALL DENDRITES) ## 
-	for sec in h.allsec():
-		sec.Ra = 100 
-
-
-
-
-
-	#############################################
-	############# INSERT MECHANISMS #############
-	#############################################
-
-	# LEAK CURRENT ##
-	g_Pass = 2.5e-05 
-	# SOMA
-	soma.insert('Pass')
-	soma.g_Pass = g_Pass 
-	soma.erev_Pass = -72 
-
-	# PROXIMAL DENDRITES
-	for prox_dend in prox_dends:
-		prox_dend.insert('Pass')
-		prox_dend.g_Pass = g_Pass
-		prox_dend.erev_Pass = -72
-
-
-	# DISTAL DENDRITES 
-	for dist_dend in dist_dends: 
-		dist_dend.insert('Pass')
-		dist_dend.g_Pass = g_Pass
-		dist_dend.erev_Pass = -72
-
-
-
-	##FAST SODIUM 
-	soma.insert('naf2')
-	soma.gmax_naf2     = 0.042
-	soma.mvhalf_naf2   = -40
-	soma.mvalence_naf2 =  5
-	soma.hvhalf_naf2   = -43
-	soma.hvalence_naf2 = -6
-
-
-
-	# POTASSIUM DELAYED RECTIFIER -- ORIGINAL
-	soma.insert('kdr2orig')
-	soma.ek = -95
-	soma.gmax_kdr2orig     	= 0.1
-	soma.mvhalf_kdr2orig  	= -31
-	soma.mvalence_kdr2orig 	=  3.8
-
-	# IH current
-	soma.insert('iar')
-	soma.ghbar_iar = 1.3e-4		# 0.13 mS/cm2; correct re: jun.pdf
-	soma.shift_iar = -0.0
-	#h.erev_iar = -44 	# ALREADY THE DEFAULT VALUE IN .mod 
-	#h.stp_iar = 7.4 	# ALREADY THE DEFAULT VALUE IN .mod 
-
-
-	# ICAN current
-	soma.insert('icanINT')
-	soma.gbar_icanINT = 0.0003
-	h.beta_icanINT = 0.003							# correct re: jun.pdf
-	h.cac_icanINT = 1.1e-04
-	soma.ratc_icanINT = 1	 						# low-thresh pool (IT)
-	soma.ratC_icanINT = 0.2							# high-thresh pool (IL)
-	h.x_icanINT = 8									# correct re: jun.pdf, if x_ican == "n"
-
-
-	# IAHP current
-	soma.insert('iahp')
-	soma.gkbar_iahp = 0.3
-	h.beta_iahp = 0.02								# correct re: jun.pdf
-	h.cac_iahp = 8e-04
-	soma.ratc_iahp = 0.2 							# low-thresh pool (IT)
-	soma.ratC_iahp = 0.8 							# high-thresh pool (IL)
-
-
-	# IT current
-	soma.insert('it2INT')
-	soma.gcabar_it2INT = 1.0e-4
-	soma.shift1_it2INT = 7
-	h.shift2_it2INT = 0
-	h.mx_it2INT = 3.0
-	h.hx_it2INT = 1.5
-	h.sm_it2INT = 4.8
-	h.sh_it2INT = 4.6
-
-
-	# CALCIUM PUMP FOR "ca" ION POOL - associated with IT
-	soma.insert('cad_int')
-	soma.taur_cad_int  = 150
-	soma.taur2_cad_int  = 80
-	soma.cainf_cad_int = 1e-8
-	soma.cainf2_cad_int  = 5.2e-5
-	soma.kt_cad_int = 0
-	soma.kt2_cad_int = 0
-	soma.k_cad_int  = 5e-3
-	soma.kd_cad_int = 9e-4
-	h.kd2_cad_int = 9e-4
-
-
-	# IL current 
-	soma.insert('icalINT')
-	soma.pcabar_icalINT = 0.0006
-	h.sh1_icalINT = -10
-	h.sh2_icalINT = 0
-
-
-	# CALCIUM PUMP FOR "Ca" ION POOL -- associated with IL 
-	soma.insert('Cad_int')
-	soma.taur_Cad_int  = 150
-	soma.taur2_Cad_int = 80
-	soma.Cainf_Cad_int  = 1e-8
-	soma.Cainf2_Cad_int  = 5.2e-5
-	soma.kt_Cad_int = 0
-	soma.kt2_Cad_int = 0
-	soma.k_Cad_int  = 5e-3
-	soma.kd_Cad_int = 9e-4
-	h.kd2_Cad_int = 9e-4
-
-
-
-	### INPUT RESISTANCE VALUES: 
-	# soma.gbar_icanINT = 0.001
-	# soma.ghbar_iar = 2e-3 
-	# soma.gkbar_iahp = 1.4 
-
-
-
-
-	# #############################################
-	# ########### CHANGE ION PARAMETERS ###########
-	# #############################################
-
-	## ion style 
-	print("h.ion_style('ca_ion')",h.ion_style('ca_ion'))
-	print("h.ion_style('Ca_ion')",h.ion_style('Ca_ion'))
-	h.ion_style('ca_ion',3,2,1,1,0)
-	h.ion_style('Ca_ion',3,2,1,1,0)
-	print("h.ion_style('ca_ion')",h.ion_style('ca_ion'))
-	print("h.ion_style('Ca_ion')",h.ion_style('Ca_ion'))
-
-	# print("h.ion_style('k_ion')",h.ion_style('k_ion'))
-	# print("h.ion_style('k2_ion')",h.ion_style('k2_ion'))
-	# h.ion_style('k_ion',1,3,1,1,1)
-	# h.ion_style('k2_ion',1,3,1,1,1)
-	# print("h.ion_style('k_ion')",h.ion_style('k_ion'))
-	# print("h.ion_style('k2_ion')",h.ion_style('k2_ion'))
-
-	# ###### NEED TO DO THIS ONE WHEN ADDING CALCIUM PUMPS ####### 
-	## RESET INTERNAL AND EXTERNAL CONCENTRATIONS OF "Ca" ION IN h _ion STRUCT
-	h.Cai0_Ca_ion = 5e-5
-	h.Cao0_Ca_ion = 2
-
-
-	## RESET INTERNAL AND EXTERNAL CONCENTRATIONS OF "k2" ION IN h _ion STRUCT
-	h.k2i0_k2_ion = 54.5
-	h.k2o0_k2_ion = 2.5 
-
-	h.ki0_k_ion = 54.5
-	h.ko0_k_ion = 2.5 
-
-	## INITIALIZE CHANGES
-	h.v_init = -66
-	h.finitialize(-66)
-
-
-	###################################
-	######### STIM OBJECT #########
-	##################################
-
-	stim = h.IClamp(soma(0.5))
+	# Modify the script to use cell.soma and cell.dend
+	stim = h.IClamp(cell.soma(0.5))
 	stim.delay = 1000
-	stim.dur = 750 
+	stim.dur = 750
 	stim.amp = 0.11
 
-
-	###################################
-	######### RECORDING #########
-	###################################
-
-	### TIME
+	# Adjust recording vectors
 	t_vec = h.Vector()
 	t_vec.record(h._ref_t)
 
-	### VOLTAGE
 	v_vec = h.Vector()
-	v_vec.record(soma(0.5)._ref_v)
+	v_vec.record(cell.soma(0.5)._ref_v)
+
+	# Setting parameter grid search
+	g_Pass_values = np.linspace((1.3e-05)/10, (1.3e-05)*10, 10)  # Range for g_Pass
+	gmax_naf2_values = np.linspace(0.1/10, 0.1*10, 10)  # Range for gmax_naf2 
+	gmax_kdr2orig_values = np.linspace(0.1/10, 0.1*10, 10)
+	ghbar_iar_values = np.linspace((7e-05)/10, (7e-05)*10, 10)
+	gbar_icanINT_values = np.linspace((9e-05)/10, (9e-05)*10, 10)
+	gkbar_iahp_values = np.linspace(0.45/10, 0.45*10, 10)
+	gcabar_it2INT_values = np.linspace((4e-05)/10, (4e-05)*10, 10)
+	pcabar_icalINT_values = np.linspace((9e-05)/10, (9e-05)*10, 10)
+
+	# Save the combination of parameters in an HDF5 file
+	with h5py.File("grid_search_results.h5", "h5") as h5file:
+		group = h5file.create_group("parameters")
+		index = 0
+		for g_Pass in g_Pass_values:
+			for gmax_naf2 in gmax_naf2_values:
+				for gmax_kdr2orig in gmax_kdr2orig_values:
+					for ghbar_iar in ghbar_iar_values:
+						for gbar_icanINT in gbar_icanINT_values:
+							for gkbar_iahp in gkbar_iahp_values:
+								for gcabar_it2INT in gcabar_it2INT_values:
+									for pcabar_icalINT in pcabar_icalINT_values:
+										param_set = {
+											cell.soma.g_Pass: g_Pass,
+											cell.soma.gmax_naf2: gmax_naf2,
+											cell.soma.gmax_kdr2orig: gmax_kdr2orig,
+											cell.soma.ghbar_iar: ghbar_iar,
+											cell.soma.gbar_icanINT: gbar_icanINT,
+											cell.soma.gkbar_iahp: gkbar_iahp,
+											cell.soma.gcabar_it2INT: gcabar_it2INT,
+											cell.soma.pcabar_icalINT: pcabar_icalINT,
+											}
+										param_group = group.create_group(f"combo_{index}")
+										for key, value in param_set.items():
+											param_group.attrs[key] = value
+										index += 1
+
+	comm.Barrier()  # Synchronize all cores before proceeding
+
+	# Run simulations simulataneosly on 10 cores
+	with h5py.File("grid_search_parameters.h5", "r") as h5file:
+		param_keys = list(h5file["parameters"].keys())
+		total_params = len(param_keys)
+		chunk_size = total_params // size
+		start_idx = rank * chunk_size
+		end_idx = (rank + 1) * chunk_size if rank != size - 1 else total_params
+		local_keys = param_keys[start_idx:end_idx]
+
+		print(f"Rank {rank} processing {len(local_keys)} parameter sets...")
+
+	# Open an HDF5 file for saving results
+		with h5py.File("simulation_results.h5", "w") as h5file:
+			results_group = h5file.create_group(f"rank_{rank}")
+
+			for key in local_keys:
+				param_group = h5file["parameters"][key].attrs
+				g_Pass = param_group["g_Pass"]
+				gmax_naf2 = param_group["gmax_naf2"]
+				gmax_kdr2orig = param_group["gmax_kdr2orig"]
+				ghbar_iar = param_group["ghbar_iar"]
+				gbar_icanINT = param_group["gbar_icanINT"]
+				gkbar_iahp = param_group["gkbar_iahp"]
+				gcabar_it2INT = param_group["gcabar_it2INT"]
+				pcabar_icalINT = param_group["pcabar_icalINT"]
+
+	# Configure NEURON model
+				cell.soma.g_Pass = g_Pass
+				cell.soma.gmax_naf2 = gmax_naf2
+				cell.soma.gmax_kdr2orig = gmax_kdr2orig
+				cell.soma.ghbar_iar = ghbar_iar
+				cell.soma.gbar_icanINT = gbar_icanINT
+				cell.soma.gkbar_iahp = gkbar_iahp
+				cell.soma.gcabar_it2INT = gcabar_it2INT
+				cell.soma.pcabar_icalINT = pcabar_icalINT
+
+				h.finitialize(-66)
+				h.celsius = 36
+				h.tstop = 2500
+				h.run()
+
+				##################
+				### CURRENTS ###
+				##################
+
+				### LEAK CURRENT
+				iPass_vec = h.Vector()
+				iPass_vec.record(cell.soma(0.5)._ref_i_Pass)
+
+				### FAST SODIUM CURRENT
+				ina_vec = h.Vector()
+				ina_vec.record(cell.soma(0.5)._ref_ina)
 
 
-	##################
-	### CURRENTS ###
-	##################
+				### K+ DELAYED RECTIFIER CURRENT
+				ik_vec = h.Vector()
+				ik_vec.record(cell.soma(0.5)._ref_ik)
 
-	### LEAK CURRENT
-	iPass_vec = h.Vector()
-	iPass_vec.record(soma(0.5)._ref_i_Pass)
+				### IH CURRENT
+				ih_vec = h.Vector()
+				ih_vec.record(cell.soma(0.5)._ref_iother)
 
-	### FAST SODIUM CURRENT
-	ina_vec = h.Vector()
-	ina_vec.record(soma(0.5)._ref_ina)
+				# IT CURRENT -- technically "ca" current
+				ica_vec_IT = h.Vector()
+				ica_vec_IT.record(cell.soma(0.5)._ref_ica)
 
+				# IL CURRENT -- technically "Ca" current
+				iCa_vec_IL = h.Vector()
+				iCa_vec_IL.record(cell.soma(0.5)._ref_iCa)
 
-	### K+ DELAYED RECTIFIER CURRENT
-	ik_vec = h.Vector()
-	ik_vec.record(soma(0.5)._ref_ik)
+				# ICAN CURRENT
+				ican_vec = h.Vector()
+				ican_vec.record(cell.soma(0.5)._ref_iother2)
 
-	### IH CURRENT
-	ih_vec = h.Vector()
-	ih_vec.record(soma(0.5)._ref_iother)
-
-	# IT CURRENT -- technically "ca" current
-	ica_vec_IT = h.Vector()
-	ica_vec_IT.record(soma(0.5)._ref_ica)
-
-	# IL CURRENT -- technically "Ca" current
-	iCa_vec_IL = h.Vector()
-	iCa_vec_IL.record(soma(0.5)._ref_iCa)
-
-	# ICAN CURRENT
-	ican_vec = h.Vector()
-	ican_vec.record(soma(0.5)._ref_iother2)
-
-	# IAHP CURRENT
-	iahp_vec = h.Vector()
-	iahp_vec.record(soma(0.5)._ref_ik2)
+				# IAHP CURRENT
+				iahp_vec = h.Vector()
+				iahp_vec.record(cell.soma(0.5)._ref_ik2)
 
 
-	################
-	##### IONS #####
-	################
+				################
+				##### IONS #####
+				################
 
-	# ### SODIUM IONS
-	# ena_soma = h.Vector()
-	# ena_soma.record(soma(0.5)._ref_ena)
-	# nai_soma = h.Vector()
-	# nai_soma.record(soma(0.5)._ref_nai)
-	# nao_soma = h.Vector()
-	# nao_soma.record(soma(0.5)._ref_nao)
+				## POTASSIUM IONS FROM KDR2 ('K ion')
+				ek_soma = h.Vector()
+				ek_soma.record(cell.soma(0.5)._ref_ek)
+				ki_soma = h.Vector()
+				ki_soma.record(cell.soma(0.5)._ref_ki)
+				ko_soma = h.Vector()
+				ko_soma.record(cell.soma(0.5)._ref_ko)
 
-	## POTASSIUM IONS FROM KDR2 ('K ion')
-	ek_soma = h.Vector()
-	ek_soma.record(soma(0.5)._ref_ek)
-	ki_soma = h.Vector()
-	ki_soma.record(soma(0.5)._ref_ki)
-	ko_soma = h.Vector()
-	ko_soma.record(soma(0.5)._ref_ko)
-
-	### K2 POTASSIUM IONS FROM IAHP ('K2 ion')
-	ek2_soma = h.Vector()
-	ek2_soma.record(soma(0.5)._ref_ek2)
-	k2i_soma = h.Vector()
-	k2i_soma.record(soma(0.5)._ref_k2i)
-	k2o_soma = h.Vector()
-	k2o_soma.record(soma(0.5)._ref_k2o)
-
-	# ### CALCIUM EQUILIBRIUM POTENTIALS
-	# eca_soma = h.Vector()
-	# eca_soma.record(soma(0.5)._ref_eca)
-	# eCa_soma = h.Vector()
-	# eCa_soma.record(soma(0.5)._ref_eCa)
+				### K2 POTASSIUM IONS FROM IAHP ('K2 ion')
+				ek2_soma = h.Vector()
+				ek2_soma.record(cell.soma(0.5)._ref_ek2)
+				k2i_soma = h.Vector()
+				k2i_soma.record(cell.soma(0.5)._ref_k2i)
+				k2o_soma = h.Vector()
+				k2o_soma.record(cell.soma(0.5)._ref_k2o)
 
 
-	### CALCIUM INTERNAL CONCENTRATIONS
-	cai_soma = h.Vector()
-	cai_soma.record(soma(0.5)._ref_cai)
-	Cai_soma = h.Vector() 
-	Cai_soma.record(soma(0.5)._ref_Cai)
+				### CALCIUM INTERNAL CONCENTRATIONS
+				cai_soma = h.Vector()
+				cai_soma.record(cell.soma(0.5)._ref_cai)
+				Cai_soma = h.Vector() 
+				Cai_soma.record(cell.soma(0.5)._ref_Cai)
 
 
-	# ### CALCIUM EXTERNAL CONCENTRATIONS
-	# cao_soma = h.Vector()
-	# cao_soma.record(soma(0.5)._ref_cao)
-	# Cao_soma = h.Vector() 
-	# Cao_soma.record(soma(0.5)._ref_Cao)
+				#####################
+				######## RUN ########
+				#####################
+				h.finitialize()
+				h.celsius = 36
+				h.tstop = 2500
+				h.run()
+
+				# Save results for this parameter combination
+				time_vector = list(h.Vector().record(h._ref_t))
+				voltage_vector = list(h.Vector().record(cell.soma(0.5)._ref_v))
+
+				# Save data in HDF5
+				sim_group = results_group.create_group(key)
+				sim_group.create_dataset("time", data=time_vector)
+				sim_group.create_dataset("voltage", data=voltage_vector)
 
 
+	comm.Barrier()
 
-	# ## ion style 
-	# print("h.ion_style('ca_ion')",h.ion_style('ca_ion'))
-	# print("h.ion_style('Ca_ion')",h.ion_style('Ca_ion'))
-	# h.ion_style('ca_ion',3,2,1,1,0)
-	# h.ion_style('Ca_ion',3,2,1,1,0)
-	# print("h.ion_style('ca_ion')",h.ion_style('ca_ion'))
-	# print("h.ion_style('Ca_ion')",h.ion_style('Ca_ion'))
-
-
-	#####################
-	######## RUN ########
-	#####################
-	h.finitialize()
-
-	h.celsius = 36
-	h.tstop = 2500
-	h.run()
+	if rank == 0:
+		print("All simulations completed.")
 
 	########### INPUT RESISTANCE 
 	print('soma input resistance')
-	print(soma(0.5).ri())
-
-	# After simulation ends, save data to CSV
-	with open("fullCurrents_AllComp_data.csv", "w", newline="") as f:
-		writer = csv.writer(f)
-		writer.writerow(["Time (ms)", "Soma Voltage (mV)"])
-		for t, v in zip(t_vec, v_vec):
-			writer.writerow([t, v])
-
+	print(cell.soma(0.5).ri())
 
 
 	##############################
@@ -404,21 +261,20 @@ def main():
 
 
 	# 	# ENTER WHICH CURRENTS TO PLOT 
-	# 	### vecsToPlot = ['voltage', 'IAHP', 'ICAN', 'IH', 'leak', 'INaf', 'IL', 'Ca', 'IT', 'ca']
+	# 	## vecsToPlot = ['voltage', 'IAHP', 'ICAN', 'IH', 'leak', 'INaf', 'IL', 'Ca', 'IT', 'ca']
 	# 	vecsToPlot = ['voltage', 'IT', 'ca', 'ICAN', 'INaf', 'IL', 'Ca', 'IAHP']
 
 
-	# 	# SLICE TIME VEC IF NECESSARY
+	# # 	# SLICE TIME VEC IF NECESSARY
 	# 	t_vec = list(t_vec)
 	# 	t_vec_allCurrents = t_vec[25000:] # USE SAME IN LOOP BELOW 
 
-
-	# 	## CREATE SUBPLOTS 
-	# 	fig,ax = plt.subplots(nrows = len(vecsToPlot), ncols = 1, sharex=True)
-
 	# 	time_points = [500, 1000]
 
-	# 	### WITH SCALEBAR
+	# # 	# CREATE SUBPLOTS 
+	# 	fig,ax = plt.subplots(nrows = len(vecsToPlot), ncols = 1, sharex=True)
+
+	# # 	### WITH SCALEBAR
 	# 	scalebar = 0 
 
 	# 	if scalebar:
@@ -429,25 +285,25 @@ def main():
 	# 			if vec == 'voltage':
 	# 				add_scalebar(ax[i],hidey=False,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='mV',barcolor=vecInfo[vec]['color'],loc=4) 
 
-	# 			# elif vec in ['leak', 'INaf', 'IKdr', 'IH', 'IT', 'IL', 'IAHP', 'ICAN']:
-	# 			# 	vecToPlotScaled = [i * 1000 for i in vecToPlot] 
-	# 			# 	vecToPlot = vecToPlotScaled
-	# 			# 	if vec == 'IAHP':
-	# 			# 		add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='pA',barcolor=vecInfo[vec]['color'],loc=4) 
-	# 			# 	else:
-	# 			# 		add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='pA',barcolor=vecInfo[vec]['color'],loc=1)
+	# 			elif vec in ['leak', 'INaf', 'IKdr', 'IH', 'IT', 'IL', 'IAHP', 'ICAN']:
+	# 				vecToPlotScaled = [i * 1000 for i in vecToPlot] 
+	# 				vecToPlot = vecToPlotScaled
+	# 				if vec == 'IAHP':
+	# 					add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='pA',barcolor=vecInfo[vec]['color'],loc=4) 
+	# 				else:
+	# 					add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='pA',barcolor=vecInfo[vec]['color'],loc=1)
 
-	# 			# elif vec in ['ca', 'Ca']:
-	# 			# 	vecToPlotScaled = [i * 1000000 for i in vecToPlot]
-	# 			# 	vecToPlot = vecToPlotScaled
-	# 			# 	add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='nM',barcolor=vecInfo[vec]['color'],loc=4)
+	# 			elif vec in ['ca', 'Ca']:
+	# 				vecToPlotScaled = [i * 1000000 for i in vecToPlot]
+	# 				vecToPlot = vecToPlotScaled
+	# 				add_scalebar(ax[i],hidey=True,hidex=True,matchx=False,matchy=False,sizey=vecInfo[vec]['sizey'], sizex=0, labelx=None, unitsy='nM',barcolor=vecInfo[vec]['color'],loc=4)
 
 
 	# 			ax[i].plot(t_vec_allCurrents,vecToPlot, color=vecInfo[vec]['color'],label=vecInfo[vec]['label'])
 	# 			ax[i].set_title(vecInfo[vec]['label'], x=0.1,y=0.25, color=vecInfo[vec]['color']) 
 
 
-	# 	### WITH AXES & SCALEBAR FOR VOLTAGE <-- USE THIS AS DEFAULT OPTION!! 
+	# # 	### WITH AXES & SCALEBAR FOR VOLTAGE <-- USE THIS AS DEFAULT OPTION!! 
 	# 	else:
 	# 		for i,vec in enumerate(vecsToPlot):
 	# 			vecToPlot = vecInfo[vec]['vec']
@@ -480,51 +336,50 @@ def main():
 	# 				yticks = np.linspace(ytickmin, ytickmax, 2)
 	# 				ax[i].set_yticks(yticks)
 
-	# 			# set units next to y axis ticks
+	# # 			# set units next to y axis ticks
 	# 			ax[i].yaxis.set_major_formatter(formatter)
 
-	# 			# set all spines invisible except the right 
+	# # 			# set all spines invisible except the right 
 	# 			ax[i].spines['bottom'].set_visible(False)
 	# 			ax[i].spines['top'].set_visible(False)
 	# 			ax[i].spines['left'].set_visible(False)
 	# 			ax[i].spines['right'].set_visible(True)
 
-	# 			# set color of right spine
+	# # 			# set color of right spine
 	# 			ax[i].spines['right'].set_color(vecInfo[vec]['color'])
 
-	# 			# remove ticks on x axis 
+	# # 			# remove ticks on x axis 
 	# 			for tic in ax[i].xaxis.get_major_ticks():
 	# 				tic.tick1On = tic.tick2On = False
 	# 				tic.label1On = tic.label2On = False
 
-	# 			# only label the tickmarks on the right spine 
+	# # 			# only label the tickmarks on the right spine 
 	# 			ax[i].yaxis.set_ticks_position('right')
 
-	# 			# set color of y ticks 
+	# # 			# set color of y ticks 
 	# 			ax[i].tick_params(axis='y',colors=vecInfo[vec]['color'])
 
 
-	# 			# PLOT 
+	# # 			# PLOT 
 	# 			ax[i].plot(t_vec_allCurrents,vecToPlot, color=vecInfo[vec]['color'],label=vecInfo[vec]['label'])
 
 	# 			ax[i].set_ylabel(vecInfo[vec]['label'])
 
 	# 			ax[i].set_title(vecInfo[vec]['label'], x=0.1,y=0.25, color=vecInfo[vec]['color']) 
 
-	# 			# ADDING VERTICAL TIME BARS
+	# # ADDING VERTICAL TIME BARS
 	# 			for time_point in time_points:
-	# 				ax[i].axvline(x=time_point, color='gray', linestyle='--', linewidth=1)
+	#  				ax[i].axvline(x=time_point, color='gray', linestyle='--', linewidth=1)
+	# # ADDING LABEL FOR X-AXIS ON LAST PLOT 
+	# #				ax[-1].set_xlabel('Time (ms)')
 
-	# 			# ADDING LABEL FOR X-AXIS ON LAST PLOT
-	# 			ax[-1].set_xlabel('Time (ms)')
-
-	# 	plt.show()
+	# plt.show()
 
 
 	# if fancyVoltage:
-	# 	### FANCIER VOLTAGE PLOTTING 
-	# 	t_vec = list(t_vec)
-	# 	v_vec = list(v_vec)
+	# # 	### FANCIER VOLTAGE PLOTTING 
+	#  	t_vec = list(t_vec)
+	#  	v_vec = list(v_vec)
 
 	# 	plt.figure(figsize=(6,3))
 	# 	ax = plt.gca()
@@ -555,17 +410,6 @@ def main():
 	# 	plt.ylabel('voltage (mV)')
 	# 	plt.show()
 	# 	plt.close()
-
-	# #############
-	# ##Plot Cell##
-	# #############
-	# for sec in h.allsec():
-	# 	if 'apic' in str(sec):
-	# 		sec.v=0
-	# ps= h.PlotShape(False)
-	# plt.grid(False)
-	# ps.plot(plt)
-
 
 
 	###############
